@@ -127,8 +127,8 @@ impl CubicCurve2D {
         let cy = self.get_cubic_cy();
         let t_squared = t * t;
         let t_cubed = t * t_squared;
-        let y = (ay * t_cubed) + (by * t_squared) + (cy * t) + self.y1;
-        y
+        
+        (ay * t_cubed) + (by * t_squared) + (cy * t) + self.y1
     }
 }
 
