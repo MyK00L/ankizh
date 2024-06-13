@@ -17,7 +17,7 @@ fn main() -> Result<(), JsValue> {
     let document = window.document().expect("should have a document on window");
     let body = document.body().unwrap();
 
-    let (cm, div) = canvas::CanvasManager::new(128);
+    let (_cm, div) = canvas::CanvasManager::new(128);
     body.append_child(&div).unwrap();
 
     Ok(())

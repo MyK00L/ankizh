@@ -21,34 +21,34 @@ impl CubicCurve2D {
         y2: f32,
     ) -> CubicCurve2D {
         CubicCurve2D {
-            x1: x1,
-            y1: y1,
-            ctrlx1: ctrlx1,
-            ctrly1: ctrly1,
-            ctrlx2: ctrlx2,
-            ctrly2: ctrly2,
-            x2: x2,
-            y2: y2,
+            x1,
+            y1,
+            ctrlx1,
+            ctrly1,
+            ctrlx2,
+            ctrly2,
+            x2,
+            y2,
         }
     }
 
     fn get_cubic_ax(&self) -> f32 {
-        return self.x2 - self.x1 - self.get_cubic_bx() - self.get_cubic_cx();
+        self.x2 - self.x1 - self.get_cubic_bx() - self.get_cubic_cx()
     }
     fn get_cubic_ay(&self) -> f32 {
-        return self.y2 - self.y1 - self.get_cubic_by() - self.get_cubic_cy();
+        self.y2 - self.y1 - self.get_cubic_by() - self.get_cubic_cy()
     }
     fn get_cubic_bx(&self) -> f32 {
-        return 3.0 * (self.ctrlx2 - self.ctrlx1) - self.get_cubic_cx();
+        3.0 * (self.ctrlx2 - self.ctrlx1) - self.get_cubic_cx()
     }
     fn get_cubic_by(&self) -> f32 {
-        return 3.0 * (self.ctrly2 - self.ctrly1) - self.get_cubic_cy();
+        3.0 * (self.ctrly2 - self.ctrly1) - self.get_cubic_cy()
     }
     fn get_cubic_cx(&self) -> f32 {
-        return 3.0 * (self.ctrlx1 - self.x1);
+        3.0 * (self.ctrlx1 - self.x1)
     }
     fn get_cubic_cy(&self) -> f32 {
-        return 3.0 * (self.ctrly1 - self.y1);
+        3.0 * (self.ctrly1 - self.y1)
     }
 
     pub fn solve_for_x(&self, x: f32) -> (f32, f32, f32, usize) {
@@ -108,8 +108,8 @@ impl CubicCurve2D {
             } else {
                 unreachable!();
             }
-            if d >= -0.0000001 && d <= 1.0000001 {
-                if d >= 0.0 && d <= 1.0 {
+            if (-0.0000001..=1.0000001).contains(&d) {
+                if (0.0..=1.0).contains(&d) {
                     return d;
                 }
                 if d < 0.0 {
@@ -118,7 +118,7 @@ impl CubicCurve2D {
                 return 1.0;
             }
         }
-        return std::f32::NAN;
+        std::f32::NAN
     }
 
     pub fn get_y_on_curve(&self, t: f32) -> f32 {
@@ -128,7 +128,7 @@ impl CubicCurve2D {
         let t_squared = t * t;
         let t_cubed = t * t_squared;
         let y = (ay * t_cubed) + (by * t_squared) + (cy * t) + self.y1;
-        return y;
+        y
     }
 }
 

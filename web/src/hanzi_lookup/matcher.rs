@@ -27,9 +27,9 @@ fn load_strokes() -> Vec<CharData> {
     let hwbytes = include_bytes!("../../data/mmah.bin");
     let reader = std::io::BufReader::new(&hwbytes[..]);
     //let res = bincode::deserialize_from(reader).expect("Failed to deserialize.");
-    let res = bincode::decode_from_reader(reader, bincode::config::standard())
-        .expect("Failed to deserialize.");
-    res
+    
+    bincode::decode_from_reader(reader, bincode::config::standard())
+        .expect("Failed to deserialize.")
 }
 
 // The algorithm's magic numbers. Allow shouting snake case because we look at these as effective constants.
@@ -100,7 +100,7 @@ impl Matcher {
         let input_char = AnalyzedCharacter::from_strokes(strokes);
 
         // Edge case: empty input should return no matches; but permissive lookup does find a few...
-        if input_char.analyzed_strokes.len() == 0 {
+        if input_char.analyzed_strokes.is_empty() {
             return;
         }
 
@@ -151,7 +151,7 @@ impl Matcher {
                     stroke_count,
                     &input_sub_strokes,
                     sub_strokes_range,
-                    &repo_char,
+                    repo_char,
                 );
                 // File; collector takes care of comparisons and keeping N-best
                 collector.file_match(char_match);
@@ -184,7 +184,7 @@ impl Matcher {
         }
         Match {
             hanzi: repo_char.hanzi,
-            score: score,
+            score,
         }
     }
 
@@ -208,7 +208,7 @@ impl Matcher {
                 // initialize the score as being not usable, it will only be set to a good
                 // value if the two substrokes are within the range.
                 let mut new_score = std::f32::MIN;
-                let range = ((x as i32) - (y as i32)).abs() as usize;
+                let range = ((x as i32) - (y as i32)).unsigned_abs() as usize;
                 if range <= sub_strokes_range {
                     // The range is based on looseness.  If the two substrokes fall out of the range
                     // then the comparison score for those two substrokes remains Double.MIN_VALUE and will not be used.
@@ -298,7 +298,7 @@ impl Matcher {
 
     fn get_direction_score(&self, direction1: u8, direction2: u8, input_length: u8) -> f32 {
         // Both directions are [0..255], integer
-        let theta = (direction1 as i32 - direction2 as i32).abs() as usize;
+        let theta = (direction1 as i32 - direction2 as i32).unsigned_abs() as usize;
         // Lookup table for actual score function
         let mut direction_score = self.direction_score_table[theta];
         // Add bonus if the input length is small.
@@ -326,7 +326,7 @@ impl Matcher {
 
     fn init_score_matrix(&mut self) {
         // Allocate if this is the first time we're initializing
-        if self.score_matrix.len() == 0 {
+        if self.score_matrix.is_empty() {
             for i in 0..self.params.MAX_CHARACTER_SUB_STROKE_COUNT + 1 {
                 self.score_matrix.push(Vec::with_capacity(
                     self.params.MAX_CHARACTER_SUB_STROKE_COUNT + 1,
@@ -380,7 +380,7 @@ impl Matcher {
         // We get the t value on the parametrized curve where the x value matches the looseness.
         // Then we compute the y value for that t. This gives the range.
         let res = curve.get_y_on_curve(t).round();
-        return res as usize;
+        res as usize
     }
 
     fn get_sub_strokes_range(&self, sub_stroke_count: usize, looseness: f32) -> usize {
@@ -409,7 +409,7 @@ impl Matcher {
         // We get the t value on the parametrized curve where the x value matches the looseness.
         // Then we compute the y value for that t. This gives the range.
         let res = curve.get_y_on_curve(t).round();
-        return res as usize;
+        res as usize
     }
 }
 

@@ -26,8 +26,8 @@ impl<'a> AnalyzedCharacter<'a> {
             sub_stroke_count += analyzed_strokes[i].sub_strokes.len();
         }
         AnalyzedCharacter {
-            analyzed_strokes: analyzed_strokes,
-            sub_stroke_count: sub_stroke_count,
+            analyzed_strokes,
+            sub_stroke_count,
         }
     }
 
@@ -84,7 +84,7 @@ fn get_norm_center(a: Point, b: Point, bounding_rect: &Rect) -> (f32, f32) {
     if bounding_rect.right - bounding_rect.left > bounding_rect.bottom - bounding_rect.top {
         side = bounding_rect.right - bounding_rect.left;
         let height = bounding_rect.bottom - bounding_rect.top;
-        x = x - bounding_rect.left;
+        x -= bounding_rect.left;
         y = y - bounding_rect.top + (side - height) / 2f32;
     }
     // Portrait
@@ -92,7 +92,7 @@ fn get_norm_center(a: Point, b: Point, bounding_rect: &Rect) -> (f32, f32) {
         side = bounding_rect.bottom - bounding_rect.top;
         let width = bounding_rect.right - bounding_rect.left;
         x = x - bounding_rect.left + (side - width) / 2f32;
-        y = y - bounding_rect.top;
+        y -= bounding_rect.top;
     }
     (x / side, y / side)
 }
@@ -219,7 +219,7 @@ fn build_sub_strokes(
         norm_length = (norm_length * 255f32).round();
         let center = get_norm_center(stroke.points[prev_ix], stroke.points[ix], bounding_rect);
         res.push(SubStroke {
-            direction: direction,
+            direction,
             length: norm_length,
             center_x: (center.0 * 15f32).round(),
             center_y: (center.1 * 15f32).round(),
@@ -244,8 +244,8 @@ fn build_analyzed_strokes<'a>(
         // Store all this
         res.push(AnalyzedStroke {
             points: &stroke.points,
-            pivot_indexes: pivot_indexes,
-            sub_strokes: sub_strokes,
+            pivot_indexes,
+            sub_strokes,
         });
     }
     res

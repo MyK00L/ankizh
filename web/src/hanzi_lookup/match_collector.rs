@@ -12,12 +12,12 @@ impl<'a> MatchCollector<'a> {
             "Expected a positive number for the maximum number of matches."
         );
         assert!(
-            matches.len() == 0,
+            matches.is_empty(),
             "The pre-existing matches vector must be empty."
         );
         MatchCollector {
-            limit: limit,
-            matches: matches,
+            limit,
+            matches,
         }
     }
 
@@ -39,12 +39,12 @@ impl<'a> MatchCollector<'a> {
         }
         // Remove existing match; don't skip new. Means shifting array left.
         self.matches.remove(ix as usize);
-        return false;
+        false
     }
 
     pub fn file_match(&mut self, mc: Match) {
         // Already at limit: don't bother if new match's score is smaller than current minimum
-        if self.matches.len() == self.limit as usize
+        if self.matches.len() == self.limit
             && mc.score <= self.matches.last().unwrap().score
         {
             return;
@@ -62,7 +62,7 @@ impl<'a> MatchCollector<'a> {
             None => self.matches.push(mc),
         }
         // Beyond limit? Drop last item.
-        if self.matches.len() > self.limit as usize {
+        if self.matches.len() > self.limit {
             self.matches.pop();
         }
     }
