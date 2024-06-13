@@ -22,8 +22,8 @@ impl<'a> AnalyzedCharacter<'a> {
         let bounding_rect = get_bounding_rect(strokes);
         let analyzed_strokes: Vec<AnalyzedStroke> = build_analyzed_strokes(strokes, &bounding_rect);
         let mut sub_stroke_count: usize = 0;
-        for i in 0..analyzed_strokes.len() {
-            sub_stroke_count += analyzed_strokes[i].sub_strokes.len();
+        for stroke in &analyzed_strokes {
+            sub_stroke_count += stroke.sub_strokes.len();
         }
         AnalyzedCharacter {
             analyzed_strokes,
@@ -55,12 +55,11 @@ fn norm_dist(a: Point, b: Point, bounding_rect: &Rect) -> f32 {
     let width = bounding_rect.right - bounding_rect.left;
     let height = bounding_rect.bottom - bounding_rect.top;
     // normalizer is a diagonal along a square with sides of size the larger dimension of the bounding box
-    let dim_squared;
-    if width > height {
-        dim_squared = width * width;
+    let dim_squared = if width > height {
+        width * width
     } else {
-        dim_squared = height * height;
-    }
+        height * height
+    };
     let normalizer = (dim_squared + dim_squared).sqrt();
     let dist_norm = dist(a, b) / normalizer;
     // Cap at 1 (...why is this needed??)
@@ -103,9 +102,7 @@ fn get_pivot_indexes(stroke: &Stroke) -> Vec<usize> {
 
     // One item for each point: true if it's a pivot
     let mut markers: Vec<bool> = Vec::with_capacity(points.len());
-    for _ in 0..points.len() {
-        markers.push(false);
-    }
+    markers.resize(points.len(), false);
 
     // Cycle variables
     let mut prev_pt_ix = 0;
@@ -182,31 +179,23 @@ fn get_pivot_indexes(stroke: &Stroke) -> Vec<usize> {
     }
 
     // Return result in the form of an index array: includes indexes where marker is true
-    let mut marker_count = 0;
-    for x in &markers {
-        if *x {
-            marker_count += 1;
-        }
-    }
-    let mut res: Vec<usize> = Vec::with_capacity(marker_count);
-    for ix in 0..markers.len() {
-        if markers[ix] {
-            res.push(ix);
-        }
-    }
-    res
+    markers
+        .iter()
+        .enumerate()
+        .filter_map(|(ix, marker)| if *marker { Some(ix) } else { None })
+        .collect()
 }
 
 // Builds array of substrokes from stroke's points, pivots, and character's bounding rectangle
 fn build_sub_strokes(
     stroke: &Stroke,
-    pivot_indexes: &Vec<usize>,
+    pivot_indexes: &[usize],
     bounding_rect: &Rect,
 ) -> Vec<SubStroke> {
     let mut res: Vec<SubStroke> = Vec::new();
     let mut prev_ix: usize = 0;
-    for i in 0..pivot_indexes.len() {
-        let ix = pivot_indexes[i];
+    for ixr in pivot_indexes {
+        let ix = *ixr;
         if ix == prev_ix {
             continue;
         }
@@ -251,7 +240,7 @@ fn build_analyzed_strokes<'a>(
     res
 }
 
-fn get_bounding_rect(strokes: &Vec<Stroke>) -> Rect {
+fn get_bounding_rect(strokes: &[Stroke]) -> Rect {
     let mut res = Rect {
         top: std::f32::MAX,
         bottom: std::f32::MIN,

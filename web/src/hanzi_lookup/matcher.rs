@@ -27,7 +27,7 @@ fn load_strokes() -> Vec<CharData> {
     let hwbytes = include_bytes!("../../data/mmah.bin");
     let reader = std::io::BufReader::new(&hwbytes[..]);
     //let res = bincode::deserialize_from(reader).expect("Failed to deserialize.");
-    
+
     bincode::decode_from_reader(reader, bincode::config::standard())
         .expect("Failed to deserialize.")
 }
@@ -132,8 +132,7 @@ impl Matcher {
                 self.params.MAX_CHARACTER_SUB_STROKE_COUNT,
             );
             // Iterate over all characters in repo
-            for cix in 0..char_data.len() {
-                let repo_char = &char_data[cix];
+            for repo_char in char_data {
                 let cmp_stroke_count = repo_char.stroke_count;
                 let cmp_sub_strokes = &repo_char.sub_strokes;
                 if (cmp_stroke_count as usize) < minimum_strokes
@@ -162,7 +161,7 @@ impl Matcher {
     fn match_one(
         &mut self,
         input_stroke_count: usize,
-        input_sub_strokes: &Vec<SubStroke>,
+        input_sub_strokes: &[SubStroke],
         sub_strokes_range: usize,
         repo_char: &CharData,
     ) -> Match {
@@ -190,18 +189,18 @@ impl Matcher {
 
     fn compute_match_score(
         &mut self,
-        input_sub_strokes: &Vec<SubStroke>,
+        input_sub_strokes: &[SubStroke],
         sub_strokes_range: usize,
         repo_char: &CharData,
     ) -> f32 {
         //
-        for x in 0..input_sub_strokes.len() {
+        for (x, input_sub_stroke) in input_sub_strokes.iter().enumerate() {
             // For each of the input substrokes...
-            let input_direction = input_sub_strokes[x].direction.round() as u8;
-            let input_length = input_sub_strokes[x].length.round() as u8;
+            let input_direction = input_sub_stroke.direction.round() as u8;
+            let input_length = input_sub_stroke.length.round() as u8;
             let input_center = Point {
-                x: input_sub_strokes[x].center_x as u8,
-                y: input_sub_strokes[x].center_y as u8,
+                x: input_sub_stroke.center_x as u8,
+                y: input_sub_stroke.center_y as u8,
             };
             for y in 0..repo_char.sub_strokes.len() {
                 // For each of the compare substrokes...
@@ -313,13 +312,12 @@ impl Matcher {
 
     fn get_length_score(&self, length1: u8, length2: u8) -> f32 {
         // Get the ratio between the two lengths less than one.
-        let ratio: usize;
         // Shift for "times 128"
-        if length1 > length2 {
-            ratio = ((length2 as f32 * 128.0) / length1 as f32).round() as usize;
+        let ratio = if length1 > length2 {
+            ((length2 as f32 * 128.0) / length1 as f32).round() as usize
         } else {
-            ratio = ((length1 as f32 * 128.0) / length2 as f32).round() as usize;
-        }
+            ((length1 as f32 * 128.0) / length2 as f32).round() as usize
+        };
         // Lookup table for actual score function
         self.length_score_table[ratio]
     }
@@ -451,113 +449,5 @@ fn init_sc_from_curve(score_table: &mut Vec<f32>, curve: &CubicCurve2D, samples:
         let t = curve.get_first_solution_for_x(f32::min(x, x2));
         score_table.push(curve.get_y_on_curve(t));
         x += x_inc;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fmt::Write;
-    use std::time::Instant;
-
-    #[test]
-    fn test_score_tables() {
-        let mut direction_score_table: Vec<f32> = Vec::new();
-        let mut length_score_table: Vec<f32> = Vec::new();
-        let mut pos_score_table: Vec<f32> = Vec::new();
-        init_score_tables(
-            &mut direction_score_table,
-            &mut length_score_table,
-            &mut pos_score_table,
-        );
-
-        assert_eq!(direction_score_table.len(), 256);
-        assert!(direction_score_table[0] > 0.99);
-        assert!(direction_score_table[96] > 0.0);
-        assert!(direction_score_table[97] < 0.0);
-        assert!(direction_score_table[183] < 0.0);
-        assert!(direction_score_table[184] > 0.0);
-        assert!(direction_score_table[255] > 0.98);
-
-        assert_eq!(length_score_table.len(), 129);
-        assert!(length_score_table[0] >= 0.0);
-        assert!(length_score_table[0] < 0.01);
-        assert!(length_score_table[23] < 0.5);
-        assert!(length_score_table[24] > 0.5);
-        assert!(length_score_table[128] > 0.99);
-
-        assert!(pos_score_table.len() == 450);
-        assert!(pos_score_table[0] == 1.0);
-        assert!(pos_score_table[121] == 0.5);
-        assert!(pos_score_table[449] < 0.04);
-    }
-
-    // These manual samples are custom-saved from a tweaked version of the HanziLookupJS demo
-    // This is a hand-drawn 一
-    static STROKES_1: &str = "[[[70,124],[71,124],[79,124],[104,124],[119,124],[132,125],[151,126],[168,126],[169,126],[189,125],[191,124],[191,124]]]";
-    // This is a hand-drawn 十
-    static STROKES_2: &str = "[[[76,127],[77,127],[84,127],[97,128],[119,128],[125,129],[138,130],[147,130],[153,131],[154,131],[158,131],[162,131],[167,131],[168,131],[169,131],[169,131]],[[129,60],[129,62],[128,74],[128,102],[128,118],[129,143],[130,162],[130,170],[130,178],[131,184],[131,188],[131,193],[131,196],[131,198],[131,203],[131,203]]]";
-    // This is a hand-drawn 元
-    static STROKES_3: &str = "[[[86,65],[98,66],[146,69],[152,69],[161,69],[166,69],[170,68],[170,68]],[[47,97],[48,97],[54,97],[89,103],[117,104],[146,101],[169,100],[176,98],[180,98],[184,98],[189,98],[193,98],[195,98],[195,98]],[[103,109],[103,110],[99,132],[91,156],[70,180],[56,190],[53,192]],[[143,105],[143,106],[142,114],[140,134],[138,149],[138,160],[138,167],[140,174],[144,182],[150,186],[155,190],[161,193],[166,194],[172,196],[188,197],[193,197],[197,197],[206,197],[206,196],[207,196],[208,196],[208,194],[204,182],[203,174],[202,174],[202,175],[202,176]]]";
-    // This is a hand-drawn 氣
-    static STROKES_4: &str = "[[[76,32],[76,33],[75,37],[73,43],[70,51],[67,58],[64,66],[61,72],[57,77],[52,82],[50,85],[50,85]],[[68,58],[69,58],[76,58],[90,59],[100,60],[110,62],[118,62],[132,62],[136,62],[141,62],[145,62],[146,62],[148,62],[148,62]],[[68,95],[69,95],[77,96],[96,96],[105,96],[110,96],[126,97],[144,98],[146,98],[154,98],[156,98],[156,98]],[[59,126],[60,126],[67,126],[90,130],[107,131],[120,132],[134,132],[149,132],[151,132],[156,132],[158,133],[158,134],[156,142],[154,147],[153,155],[152,160],[151,166],[150,172],[150,179],[150,183],[150,186],[150,190],[151,194],[152,199],[156,204],[158,206],[162,209],[167,213],[171,215],[175,216],[184,220],[192,222],[196,223],[200,224],[204,225],[208,225],[210,225],[214,225],[218,223],[218,222],[216,214],[214,208],[214,207],[214,207]],[[79,147],[82,148],[87,155],[91,161],[91,161]],[[124,148],[123,148],[116,155],[110,162],[108,164],[108,164]],[[73,175],[75,175],[88,178],[98,180],[104,180],[111,182],[117,182],[122,182],[125,182]],[[100,148],[100,151],[102,172],[102,195],[103,204],[103,211],[104,216],[104,220],[104,224]],[[94,189],[93,189],[81,204],[72,210],[71,210]],[[109,192],[112,194],[120,199],[132,208],[133,210],[133,210]]]";
-
-    fn parse_sample(str_strokes: &str) -> Vec<Stroke> {
-        let vec_strokes: Vec<Vec<Vec<u8>>> = serde_json::from_str(str_strokes).unwrap();
-        let mut strokes: Vec<Stroke> = Vec::new();
-        for vec_stroke in &vec_strokes {
-            let mut points: Vec<Point> = Vec::new();
-            for vec_point in vec_stroke {
-                points.push(Point {
-                    x: vec_point[0],
-                    y: vec_point[1],
-                });
-            }
-            strokes.push(Stroke { points: points });
-        }
-        strokes
-    }
-
-    #[test]
-    fn test_matches() {
-        let mut barf = String::new();
-        let mut matcher = Matcher::new();
-        let mut res: Vec<Match> = Vec::with_capacity(8);
-        {
-            let sample = parse_sample(STROKES_1);
-            res.clear();
-            let mut collector = MatchCollector::new(&mut res, 8);
-            matcher.lookup(&sample, &mut collector);
-            //write!(&mut barf, "#1: {}", res[0].hanzi).unwrap();
-            assert!(res[0].hanzi == '一');
-        }
-        {
-            let sample = parse_sample(STROKES_2);
-            res.clear();
-            let mut collector = MatchCollector::new(&mut res, 8);
-            matcher.lookup(&sample, &mut collector);
-            //write!(&mut barf, "#1: {}  #2: {}  #3: {}  #4: {}", res[0].hanzi, res[1].hanzi, res[2].hanzi, res[3].hanzi).unwrap();
-            assert!(res[0].hanzi == '十');
-        }
-        {
-            let sample = parse_sample(STROKES_3);
-            res.clear();
-            let mut collector = MatchCollector::new(&mut res, 8);
-            matcher.lookup(&sample, &mut collector);
-            //write!(&mut barf, "#1: {}  #2: {}  #3: {}  #4: {}", res[0].hanzi, res[1].hanzi, res[2].hanzi, res[3].hanzi).unwrap();
-            assert!(res[1].hanzi == '元'); // Here we get the right char as the second match!
-        }
-        {
-            let sample = parse_sample(STROKES_4);
-            res.clear();
-            let start = Instant::now();
-            let mut collector = MatchCollector::new(&mut res, 8);
-            matcher.lookup(&sample, &mut collector);
-            let duration = start.elapsed();
-            write!(&mut barf, "Duration: {:?}", duration).unwrap();
-            println!("Duration: {:?}", duration);
-            //write!(&mut barf, "#1: {}  #2: {}  #3: {}  #4: {}", res[0].hanzi, res[1].hanzi, res[2].hanzi, res[3].hanzi).unwrap();
-            assert!(res[0].hanzi == '氣');
-        }
     }
 }

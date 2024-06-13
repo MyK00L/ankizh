@@ -15,10 +15,7 @@ impl<'a> MatchCollector<'a> {
             matches.is_empty(),
             "The pre-existing matches vector must be empty."
         );
-        MatchCollector {
-            limit,
-            matches,
-        }
+        MatchCollector { limit, matches }
     }
 
     fn remove_existing_lower(&mut self, mc: &Match) -> bool {
@@ -44,9 +41,7 @@ impl<'a> MatchCollector<'a> {
 
     pub fn file_match(&mut self, mc: Match) {
         // Already at limit: don't bother if new match's score is smaller than current minimum
-        if self.matches.len() == self.limit
-            && mc.score <= self.matches.last().unwrap().score
-        {
+        if self.matches.len() == self.limit && mc.score <= self.matches.last().unwrap().score {
             return;
         }
         // Remove if we already have this character with a lower score

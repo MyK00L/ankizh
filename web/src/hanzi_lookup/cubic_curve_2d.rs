@@ -10,6 +10,7 @@ pub struct CubicCurve2D {
 }
 
 impl CubicCurve2D {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         x1: f32,
         y1: f32,
@@ -127,7 +128,7 @@ impl CubicCurve2D {
         let cy = self.get_cubic_cy();
         let t_squared = t * t;
         let t_cubed = t * t_squared;
-        
+
         (ay * t_cubed) + (by * t_squared) + (cy * t) + self.y1
     }
 }
