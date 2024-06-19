@@ -1,0 +1,6 @@
+[submodule "res/audio-cmn"]
+	path = res/audio-cmn
+	url = https://github.com/hugolpz/audio-cmn.git
+[submodule "res/HSK-3.0"]
+	path = res/HSK-3.0
+	url = https://github.com/krmanik/HSK-3.0.git

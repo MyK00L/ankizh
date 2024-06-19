@@ -1,3 +1,4 @@
+use ordered_float::NotNan;
 use std::cmp::Ordering;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -6,12 +7,11 @@ pub struct Definition {
     pub english: Vec<String>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Priority {
-    pub val: f32,
-    pub max: f32,
+    pub val: NotNan<f32>,
+    pub max: NotNan<f32>,
 }
-impl Eq for Priority {}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CharWriting {
@@ -24,19 +24,24 @@ pub struct Entry {
     pub id: String,
     pub pinyin: Vec<String>,
     pub definitions: Vec<Definition>,
-    pub priority: Vec<Priority>,
+    pub freq: Vec<NotNan<f32>>,
+    pub hsk_lev: Option<u8>,
     pub dependencies: Vec<String>,
     pub writing: Vec<CharWriting>,
     pub traditional: Option<String>,
+    pub audio_file: Option<std::path::PathBuf>,
 }
 impl Entry {
-    pub fn total_priority(&self) -> f32 {
-        if self.priority.is_empty() {
-            0f32
-        } else {
-            self.priority.iter().map(|x| x.val).sum::<f32>()
-                / self.priority.iter().map(|x| x.max).sum::<f32>()
-        }
+    pub fn total_priority(&self) -> NotNan<f32> {
+        let freq: NotNan<f32> = self.freq.iter().sum();
+        let hsk_lev = self.hsk_lev.unwrap_or(10);
+
+        let hp = NotNan::new((10 - hsk_lev) as f32 / 10f32).unwrap();
+        let fp = (NotNan::new(freq.log2()).unwrap() + NotNan::new(16f32).unwrap())
+            .max(NotNan::new(0f32).unwrap())
+            / 16f32;
+
+        hp * 0.5 + fp * 0.5
     }
     pub fn merge_add(&mut self, mut o: Entry) {
         if !(self.writing.is_empty() || o.writing.is_empty()) {
@@ -54,22 +59,24 @@ impl Entry {
             }
         }
         self.definitions.append(&mut o.definitions);
-        self.priority.append(&mut o.priority);
+        self.freq.append(&mut o.freq);
         assert!(self.writing.is_empty() || o.writing.is_empty());
         self.writing.append(&mut o.writing);
 
         self.traditional = self.traditional.take().or(o.traditional);
+        self.audio_file = self.audio_file.take().or(o.audio_file);
+        self.hsk_lev = self.hsk_lev.take().or(o.hsk_lev);
     }
 }
 impl Ord for Entry {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.total_priority().cmp(&other.total_priority())
     }
 }
 
 impl PartialOrd for Entry {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.total_priority().partial_cmp(&other.total_priority())
+        Some(self.cmp(other))
     }
 }
 

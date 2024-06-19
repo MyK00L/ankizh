@@ -1,7 +1,11 @@
+#![feature(path_file_prefix)]
 mod anim_cjk;
+mod audio;
 mod cedict;
 mod common;
 mod freq;
+mod freq2;
+mod hsk;
 
 use common::*;
 use genanki_rs::*;
@@ -31,6 +35,7 @@ fn main_model() -> Model {
         MODEL_ID,
         "hanziM",
         vec![
+            Field::new("sort_field"),
             Field::new("utf8"),
             Field::new("meaning"),
             Field::new("reading"),
@@ -52,10 +57,20 @@ fn process_entries() -> Vec<Entry> {
         .into_iter()
         .map(Entry::from);
     let cd = cedict::get_cedict().into_iter().map(Entry::from);
-    let fe = freq::get_records().into_iter().map(Entry::from);
+    let fr = freq::get_records().into_iter().map(Entry::from);
+    let f2 = freq2::get_records().into_iter().map(Entry::from);
+    let wa = audio::get_word_audios().into_iter().map(Entry::from);
+    let hs = hsk::get_hsks().into_iter().map(Entry::from);
 
     let mut hm = HashMap::<String, Entry>::new();
-    for e in ag.chain(ad).chain(cd).chain(fe) {
+    for e in ag
+        .chain(ad)
+        .chain(cd)
+        .chain(fr)
+        .chain(f2)
+        .chain(wa)
+        .chain(hs)
+    {
         let hme = hm.entry(e.id.clone()).or_default();
         hme.id = e.id.clone();
         hme.merge_add(e);
@@ -103,6 +118,7 @@ fn process_entries() -> Vec<Entry> {
         while stack.last().is_some_and(|x| x.is_empty()) {
             stack.pop();
         }
+        //eprintln!("{:?}", &stack[1..]);
         if let Some(lv) = stack.last_mut() {
             if let Some(eid) = lv.last().cloned() {
                 let e = hm.get(&eid).unwrap().clone();
@@ -117,8 +133,10 @@ fn process_entries() -> Vec<Entry> {
                         done.insert(e.id.clone());
                         ans.push(e);
                         lv.pop();
+                        //eprintln!("made {}", eid);
                     } else {
                         deps.sort_by(|a, b| hm.get(a).unwrap().cmp(hm.get(b).unwrap()));
+                        //eprintln!("to make a {}:{} i need {:?}", eid, e.total_priority(), deps);
                         stack.push(deps);
                     }
                 } else {
@@ -133,55 +151,12 @@ fn process_entries() -> Vec<Entry> {
     }
 
     ans
-
-    /*
-    let mut outd = HashMap::<String, u32>::new();
-    let mut revdep = HashMap::<String, Vec<String>>::new();
-    let mut pq = BinaryHeap::<Entry>::new();
-    for (key, val) in hm.iter() {
-        let mut dnum = 0u32;
-        for dep in val.dependencies.iter() {
-            if !hm.contains_key(dep) {
-                eprintln!("no dep {}", dep);
-            } else {
-                revdep.entry(dep.clone()).or_default().push(key.clone());
-                dnum += 1;
-            }
-        }
-        outd.insert(key.clone(), dnum);
-        if dnum == 0 {
-            pq.push(val.clone());
-        }
-    }
-
-    let mut ans = Vec::new();
-    while let Some(entry) = pq.pop() {
-        if let Some(rdeps) = revdep.get(&entry.id) {
-            for rdep in rdeps {
-                let dnum = outd.get_mut(rdep).unwrap();
-                *dnum -= 1;
-                if *dnum == 0 {
-                    pq.push(hm.get(rdep).unwrap().clone());
-                }
-            }
-        }
-        ans.push(entry);
-    }
-    */
-
-    /*
-    for (key, dnum) in outd.iter() {
-        if *dnum != 0 {
-            eprintln!("not included: {} {}", key, dnum);
-        }
-    }
-    */
 }
 
 fn main() {
     let entries = process_entries();
-    for entry in entries {
-        println!("[{}:{}]", entry.id, entry.total_priority());
+    for entry in entries.into_iter().take(10000) {
+        println!("[{},{}]", entry.id, entry.total_priority());
     }
 
     return;
