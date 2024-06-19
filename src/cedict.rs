@@ -20,7 +20,7 @@ impl From<CedictEntry> for Entry {
                 .iter()
                 .map(|x| Definition {
                     pinyin: Some(x.0.clone()),
-                    english: vec![x.1.clone()],
+                    english: x.1.split(';').map(|x| x.trim()).filter(|x| !x.is_empty()).map(|x| x.to_owned()).collect(),
                 })
                 .collect(),
             ..Default::default()
