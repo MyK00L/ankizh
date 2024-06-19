@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub enum EtymologyType {
@@ -16,7 +16,7 @@ pub struct Etymology {
     r#type: EtymologyType,
     hint: Option<String>,
     phonetic: Option<String>,
-    semantic: Option<String>
+    semantic: Option<String>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -27,14 +27,14 @@ pub struct DictionaryEntry {
     decomposition: String,
     etymology: Option<Etymology>,
     radical: char,
-    matches: Vec<Option<Vec<usize> > >,
+    matches: Vec<Option<Vec<usize>>>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct GraphicsEntry {
     pub character: char,
     strokes: Vec<String>,
-    medians: Vec<Vec<(f32,f32)> >,
+    medians: Vec<Vec<(f32, f32)>>,
 }
 
 use std::fs::File;
@@ -60,4 +60,3 @@ pub fn parse_dictionary() -> Vec<DictionaryEntry> {
     }
     ans
 }
-
