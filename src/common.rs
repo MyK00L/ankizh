@@ -109,6 +109,13 @@ impl WordEntry {
         self.audio_file = self.audio_file.take().or(o.audio_file);
         self.hsk_lev = self.hsk_lev.take().or(o.hsk_lev);
     }
+    fn is_missing_writing(&self) -> bool {
+        self.writing.len() != self.id.chars().count()
+            || self
+                .writing
+                .iter()
+                .any(|x| matches!(x, CharWriting::Char(_)))
+    }
 }
 impl Entry for WordEntry {
     fn priority(&self) -> NotNan<f32> {
@@ -138,6 +145,13 @@ impl Entry for WordEntry {
             _ => unreachable!(),
         }
     }
+    fn compact_display(&self) -> String {
+        if self.is_missing_writing() {
+            format!("W {}:{} !MissingWriting!", self.id, self.priority())
+        } else {
+            format!("W {}:{}", self.id, self.priority())
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -158,24 +172,61 @@ impl Entry for SyllableEntry {
     fn merge(&mut self, o: CommonEntry) {
         todo!()
     }
+    fn compact_display(&self) -> String {
+        todo!()
+    }
+}
+
+use std::sync::LazyLock;
+pub static JIEBA: LazyLock<jieba_rs::Jieba> = LazyLock::new(jieba_rs::Jieba::new);
+
+#[derive(Clone, Debug)]
+pub struct Triplet {
+    pub zh: String,
+    pub en: String,
+    pub py: String,
+}
+impl Triplet {
+    fn dependencies(&self) -> Vec<EntryId> {
+        let words = JIEBA.cut(&self.zh, false);
+        words
+            .into_iter()
+            .map(|x| EntryId::Word(x.to_owned()))
+            .collect()
+    }
 }
 #[derive(Clone, Debug)]
-pub struct GrammarEntry {}
+pub struct GrammarEntry {
+    pub id: String,
+    pub structure: Triplet,
+    pub example: Triplet,
+    pub hsk_lev: Option<u8>,
+    /// 0 for first entry, 1 for last entry
+    pub hsk_sublev: Option<f32>,
+}
 impl Entry for GrammarEntry {
     fn priority(&self) -> NotNan<f32> {
-        todo!()
+        let hsk_lev = self.hsk_lev.unwrap_or(10);
+        let hp = NotNan::new((10 - hsk_lev) as f32 / 10f32).unwrap();
+        let fp = 1f32 - self.hsk_sublev.unwrap_or(1f32);
+        hp * 0.5 + hp * fp * 0.25
     }
     fn into_note(self, model: genanki_rs::Model) -> genanki_rs::Note {
         todo!()
     }
     fn id(&self) -> EntryId {
-        todo!()
+        EntryId::Grammar(self.id.clone())
     }
     fn dependencies(&self) -> Vec<EntryId> {
-        todo!()
+        let mut a = self.structure.dependencies();
+        a.extend(self.example.dependencies());
+        a
     }
     fn merge(&mut self, o: CommonEntry) {
-        todo!()
+        unimplemented!()
+    }
+    fn compact_display(&self) -> String {
+        format!("G {}|{}:{}", self.example.zh, self.example.py, self.priority())
     }
 }
 
@@ -202,4 +253,5 @@ pub trait Entry {
     fn id(&self) -> EntryId;
     fn dependencies(&self) -> Vec<EntryId>;
     fn merge(&mut self, o: CommonEntry);
+    fn compact_display(&self) -> String;
 }

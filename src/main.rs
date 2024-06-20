@@ -59,6 +59,7 @@ fn process_entries() -> Vec<CommonEntry> {
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
     let hs = hsk::get_hsks();
+    let lg = lp_grammar::get_records();
 
     let mut hm = HashMap::<EntryId, CommonEntry>::new();
     for e in ag
@@ -68,6 +69,7 @@ fn process_entries() -> Vec<CommonEntry> {
         .chain(f2)
         .chain(wa)
         .chain(hs)
+        .chain(lg)
     {
         if let Some(hme) = hm.get_mut(&e.id()) {
             hme.merge(e);
@@ -162,7 +164,7 @@ fn main() {
     let entries = process_entries();
     eprintln!("entries.len: {}", entries.len());
     for entry in entries.into_iter().take(10000) {
-        println!("[{:?},{},{:?}]", entry.id(), entry.priority(), entry);
+        println!("{}", entry.compact_display());
     }
 
     return;
