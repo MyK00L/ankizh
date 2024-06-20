@@ -9,11 +9,9 @@ pub struct GraphicsEntry {
 }
 impl From<GraphicsEntry> for WordEntry {
     fn from(o: GraphicsEntry) -> Self {
-        Self {
-            id: o.character.into(),
-            writing: vec![CharWriting::Strokes(o.strokes)],
-            ..Default::default()
-        }
+        let mut w = WordEntry::from_id(o.character.into());
+        w.writing = vec![CharWriting::Strokes(o.strokes)];
+        w
     }
 }
 
@@ -40,11 +38,9 @@ impl From<DictionaryEntry> for WordEntry {
             .map(Into::<String>::into)
             .map(EntryId::Word)
             .collect();
-        Self {
-            id: o.character.into(),
-            dependencies: radical_deps,
-            ..Default::default()
-        }
+        let mut w = WordEntry::from_id(o.character.into());
+        w.dependencies = radical_deps;
+        w
     }
 }
 

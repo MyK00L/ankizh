@@ -11,11 +11,9 @@ pub struct FreqRecord {
 }
 impl From<FreqRecord> for WordEntry {
     fn from(r: FreqRecord) -> Self {
-        Self {
-            id: r.id,
-            freq: vec![r.freq],
-            ..Default::default()
-        }
+        let mut w = WordEntry::from_id(r.id);
+        w.freq = vec![r.freq];
+        w
     }
 }
 

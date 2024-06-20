@@ -11,26 +11,24 @@ pub struct CedictEntry {
 }
 impl From<CedictEntry> for WordEntry {
     fn from(o: CedictEntry) -> Self {
-        Self {
-            id: o.simplified,
-            traditional: Some(o.traditional),
-            pinyin: o.pinyin, // TODO: normalize
-            definitions: o
-                .definitions
-                .iter()
-                .map(|x| Definition {
-                    pinyin: Some(x.0.clone()),
-                    english: x
-                        .1
-                        .split(';')
-                        .map(|x| x.trim())
-                        .filter(|x| !x.is_empty())
-                        .map(|x| x.to_owned())
-                        .collect(),
-                })
-                .collect(),
-            ..Default::default()
-        }
+        let mut w = WordEntry::from_id(o.simplified);
+        w.traditional = Some(o.traditional);
+        w.pinyin = o.pinyin.iter().map(|x| process_pinyin(x)).collect();
+        w.definitions = o
+            .definitions
+            .iter()
+            .map(|x| Definition {
+                pinyin: Some(x.0.clone()),
+                english: x
+                    .1
+                    .split(';')
+                    .map(|x| x.trim())
+                    .filter(|x| !x.is_empty())
+                    .map(|x| x.to_owned())
+                    .collect(),
+            })
+            .collect();
+        w
     }
 }
 

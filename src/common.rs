@@ -45,7 +45,7 @@ pub enum CharWriting {
     Char(char),
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct WordEntry {
     pub id: String,
     pub pinyin: Vec<String>,
@@ -58,6 +58,20 @@ pub struct WordEntry {
     pub audio_file: Option<std::path::PathBuf>,
 }
 impl WordEntry {
+    pub fn from_id(id: String) -> Self {
+        WordEntry {
+            id: id.clone(),
+            pinyin: vec![],
+            definitions: vec![],
+            freq: vec![],
+            hsk_lev: None,
+            dependencies: vec![],
+            writing: id.chars().map(CharWriting::Char).collect(),
+            traditional: None,
+            audio_file: None,
+        }
+    }
+
     pub fn total_priority(&self) -> NotNan<f32> {
         let freq: NotNan<f32> = self.freq.iter().sum();
         let hsk_lev = self.hsk_lev.unwrap_or(10);
@@ -70,9 +84,6 @@ impl WordEntry {
         hp * 0.5 + fp * 0.5
     }
     fn merge_inner(&mut self, mut o: Self) {
-        if !(self.writing.is_empty() || o.writing.is_empty()) {
-            eprintln!("{:?} {:?}", self, o.clone());
-        }
         assert_eq!(self.id, o.id);
         for py in o.pinyin {
             let py = process_pinyin(&py);
@@ -87,8 +98,12 @@ impl WordEntry {
         }
         self.definitions.append(&mut o.definitions);
         self.freq.append(&mut o.freq);
-        assert!(self.writing.is_empty() || o.writing.is_empty());
-        self.writing.append(&mut o.writing);
+
+        for (a, b) in self.writing.iter_mut().zip(o.writing.into_iter()) {
+            if let CharWriting::Char(_) = a {
+                *a = b;
+            }
+        }
 
         self.traditional = self.traditional.take().or(o.traditional);
         self.audio_file = self.audio_file.take().or(o.audio_file);

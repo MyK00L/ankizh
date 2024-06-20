@@ -8,11 +8,9 @@ pub struct AudioPath {
 }
 impl From<AudioPath> for WordEntry {
     fn from(a: AudioPath) -> Self {
-        Self {
-            id: a.id,
-            audio_file: Some(a.path),
-            ..Default::default()
-        }
+        let mut w = WordEntry::from_id(a.id);
+        w.audio_file = Some(a.path);
+        w
     }
 }
 

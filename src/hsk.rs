@@ -10,11 +10,9 @@ pub struct HskEntry {
 }
 impl From<HskEntry> for WordEntry {
     fn from(h: HskEntry) -> Self {
-        Self {
-            id: h.id,
-            hsk_lev: Some(h.level),
-            ..Default::default()
-        }
+        let mut w = WordEntry::from_id(h.id);
+        w.hsk_lev = Some(h.level);
+        w
     }
 }
 

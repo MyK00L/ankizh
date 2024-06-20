@@ -78,6 +78,41 @@ fn process_entries() -> Vec<CommonEntry> {
 
     // TODO: character-based writing for single-character entries
     // TODO: writing for multiple-character entries
+    {
+        let keys: Vec<_> = hm
+            .keys()
+            .filter(|k| {
+                if let EntryId::Word(w) = k {
+                    w.chars().count() > 1
+                } else {
+                    false
+                }
+            })
+            .cloned()
+            .collect();
+        for key in keys {
+            if let EntryId::Word(ref w) = key {
+                let wr = w
+                    .chars()
+                    .map(|c| {
+                        hm.get(&EntryId::Word(c.into()))
+                            .map(|x| {
+                                if let CommonEntry::WordEntry(w) = x {
+                                    w.writing[0].clone()
+                                } else {
+                                    unreachable!()
+                                }
+                            })
+                            .unwrap_or(CharWriting::Char(c))
+                    })
+                    .collect();
+
+                if let CommonEntry::WordEntry(w) = hm.get_mut(&key).unwrap() {
+                    w.writing = wr;
+                }
+            }
+        }
+    }
 
     let mut entries: Vec<CommonEntry> = hm.values().cloned().collect();
     entries.sort_by_cached_key(|e| e.priority());
@@ -127,7 +162,7 @@ fn main() {
     let entries = process_entries();
     eprintln!("entries.len: {}", entries.len());
     for entry in entries.into_iter().take(10000) {
-        println!("[{:?},{}]", entry.id(), entry.priority());
+        println!("[{:?},{},{:?}]", entry.id(), entry.priority(), entry);
     }
 
     return;
