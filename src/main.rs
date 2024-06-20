@@ -6,6 +6,7 @@ mod common;
 mod freq;
 mod freq2;
 mod hsk;
+mod lp_grammar;
 
 use common::*;
 use genanki_rs::*;
@@ -154,6 +155,12 @@ fn process_entries() -> Vec<Entry> {
 }
 
 fn main() {
+    let lg = lp_grammar::get_records();
+    for l in lg {
+        println!("{:?}", l);
+    }
+    return;
+
     let entries = process_entries();
     for entry in entries.into_iter().take(10000) {
         println!("[{},{}]", entry.id, entry.total_priority());

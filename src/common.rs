@@ -1,6 +1,19 @@
 use ordered_float::NotNan;
 use std::cmp::Ordering;
 
+pub fn process_pinyin(s: &str) -> String {
+    let s = prettify_pinyin::prettify(s);
+    let parser = pinyin_parser::PinyinParser::new()
+        .preserve_spaces(false)
+        .preserve_punctuations(true)
+        .with_strictness(pinyin_parser::Strictness::Loose)
+        .preserve_miscellaneous(true);
+    parser
+        .parse(&s)
+        .reduce(|acc, s| acc + &s)
+        .unwrap_or_default()
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Definition {
     pub pinyin: Option<String>,
@@ -49,6 +62,7 @@ impl Entry {
         }
         assert_eq!(self.id, o.id);
         for py in o.pinyin {
+            let py = process_pinyin(&py);
             if !self.pinyin.contains(&py) {
                 self.pinyin.push(py);
             }
