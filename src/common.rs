@@ -155,25 +155,29 @@ impl Entry for WordEntry {
 }
 
 #[derive(Clone, Debug)]
-pub struct SyllableEntry {}
+pub struct SyllableEntry {
+    /// pinyin
+    pub id: String,
+    pub audio_file: std::path::PathBuf,
+}
 impl Entry for SyllableEntry {
     fn priority(&self) -> NotNan<f32> {
-        todo!()
+        NotNan::new(10f32).unwrap()
     }
     fn into_note(self, model: genanki_rs::Model) -> genanki_rs::Note {
         todo!()
     }
     fn id(&self) -> EntryId {
-        todo!()
+        EntryId::Syllable(self.id.clone())
     }
     fn dependencies(&self) -> Vec<EntryId> {
-        todo!()
+        vec![]
     }
-    fn merge(&mut self, o: CommonEntry) {
-        todo!()
+    fn merge(&mut self, _o: CommonEntry) {
+        unimplemented!()
     }
     fn compact_display(&self) -> String {
-        todo!()
+        format!("S {}:{}", self.id, self.priority())
     }
 }
 
@@ -226,7 +230,7 @@ impl Entry for GrammarEntry {
         unimplemented!()
     }
     fn compact_display(&self) -> String {
-        format!("G {}|{}:{}", self.example.zh, self.example.py, self.priority())
+        format!("G {}:{}", self.example.zh, self.priority())
     }
 }
 

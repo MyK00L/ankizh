@@ -29,7 +29,6 @@ impl From<GrammarRecord> for GrammarEntry {
             .flatten()
             .map(|x| x.with_tone().to_string())
             .fold(String::new(), |acc, e| acc + &e);
-        eprintln!("{}", epy);
         let epy = process_pinyin(&epy);
         Self {
             id: gr.id.to_string(),

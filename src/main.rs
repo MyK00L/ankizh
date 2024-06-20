@@ -58,6 +58,7 @@ fn process_entries() -> Vec<CommonEntry> {
     let fr = freq::get_records();
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
+    let sa = audio::get_syllable_audios();
     let hs = hsk::get_hsks();
     let lg = lp_grammar::get_records();
 
@@ -68,6 +69,7 @@ fn process_entries() -> Vec<CommonEntry> {
         .chain(fr)
         .chain(f2)
         .chain(wa)
+        .chain(sa)
         .chain(hs)
         .chain(lg)
     {
@@ -163,7 +165,11 @@ fn process_entries() -> Vec<CommonEntry> {
 fn main() {
     let entries = process_entries();
     eprintln!("entries.len: {}", entries.len());
-    for entry in entries.into_iter().take(10000) {
+    for entry in entries
+        .into_iter()
+        .filter(|x| !matches!(x, CommonEntry::SyllableEntry(_)))
+        .take(600)
+    {
         println!("{}", entry.compact_display());
     }
 
