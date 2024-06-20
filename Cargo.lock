@@ -45,12 +45,14 @@ dependencies = [
  "enum_dispatch",
  "genanki-rs",
  "indexmap",
+ "itertools",
  "jieba-rs",
  "lyon_path",
  "ordered-float",
  "pinyin",
  "pinyin-parser",
  "prettify_pinyin",
+ "ptrie",
  "serde",
  "serde_json",
 ]
@@ -277,6 +279,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "either"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3dca9240753cf90908d7e4aac30f630662b02aebaa1b58a3cadabdb23385b58b"
+
+[[package]]
 name = "enum_dispatch"
 version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -441,6 +449,15 @@ dependencies = [
  "equivalent",
  "hashbrown 0.14.5",
  "serde",
+]
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
 ]
 
 [[package]]
@@ -660,6 +677,12 @@ checksum = "ec96c6a92621310b51366f1e28d05ef11489516e93be030060e5fc12024a49d6"
 dependencies = [
  "unicode-ident",
 ]
+
+[[package]]
+name = "ptrie"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a604cf566be44c8eecfaef307b84eaadff3b3fc0a7d0bb3e4db46949abc9587"
 
 [[package]]
 name = "pulldown-cmark"

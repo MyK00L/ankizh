@@ -56,6 +56,7 @@ pub struct WordEntry {
     pub writing: Vec<CharWriting>,
     pub traditional: Option<String>,
     pub audio_file: Option<std::path::PathBuf>,
+    pub examples: Vec<Triplet>,
 }
 impl WordEntry {
     pub fn from_id(id: String) -> Self {
@@ -69,6 +70,7 @@ impl WordEntry {
             writing: id.chars().map(CharWriting::Char).collect(),
             traditional: None,
             audio_file: None,
+            examples: vec![],
         }
     }
 
@@ -168,7 +170,7 @@ impl Entry for WordEntry {
             && self.hsk_lev.is_none()
     }
 }
-fn is_good_cjk(c: char) -> bool {
+pub fn is_good_cjk(c: char) -> bool {
     let cp: u32 = c.into();
     (0x4E00..=0x9FFF).contains(&cp)
         || (0x3400..=0x4DBF).contains(&cp)

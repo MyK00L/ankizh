@@ -10,6 +10,7 @@ mod freq;
 mod freq2;
 mod hsk;
 mod lp_grammar;
+mod tatoeba;
 
 use common::*;
 use genanki_rs::*;
@@ -157,6 +158,8 @@ fn process_entries() -> Vec<CommonEntry> {
 
     assert_eq!(ans.len(), entries.len());
 
+    tatoeba::add_examples(&mut ans);
+
     ans
 }
 
@@ -166,7 +169,7 @@ fn main() {
     for entry in entries
         .into_iter()
         .filter(|x| !matches!(x, CommonEntry::SyllableEntry(_)))
-        .skip(20000)
+        .skip(8000)
         .take(600)
     {
         println!("{}", entry.compact_display());
