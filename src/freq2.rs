@@ -9,7 +9,7 @@ pub struct FreqRecord {
     id: String,
     freq: NotNan<f32>,
 }
-impl From<FreqRecord> for Entry {
+impl From<FreqRecord> for WordEntry {
     fn from(r: FreqRecord) -> Self {
         Self {
             id: r.id,
@@ -19,7 +19,7 @@ impl From<FreqRecord> for Entry {
     }
 }
 
-pub fn get_records() -> Vec<FreqRecord> {
+pub fn get_records() -> impl Iterator<Item = CommonEntry> {
     let file = std::fs::File::open("res/zh_cn_50k.txt").unwrap();
     let reader = std::io::BufReader::new(file).lines().map_while(Result::ok);
     let a: Vec<(String, u32)> = reader
@@ -33,9 +33,10 @@ pub fn get_records() -> Vec<FreqRecord> {
         .collect();
     let tot: u32 = a.iter().map(|x| x.1).sum();
     a.into_iter()
-        .map(|x| FreqRecord {
+        .map(move |x| FreqRecord {
             id: x.0,
             freq: NotNan::new(x.1 as f32 / tot as f32).unwrap(),
         })
-        .collect()
+        .map(WordEntry::from)
+        .map(CommonEntry::from)
 }

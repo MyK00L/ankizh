@@ -11,7 +11,7 @@ pub struct FreqRecord {
     #[serde(rename = "Dominant.PoS")]
     pos: String,
 }
-impl From<FreqRecord> for Entry {
+impl From<FreqRecord> for WordEntry {
     fn from(r: FreqRecord) -> Self {
         let freq = r.wm / 1000000f32;
         Self {
@@ -22,16 +22,17 @@ impl From<FreqRecord> for Entry {
     }
 }
 
-pub fn get_records() -> Vec<FreqRecord> {
+pub fn get_records() -> impl Iterator<Item = CommonEntry> {
     let file = std::fs::File::open("res/SUBTLEX-CH.txt").unwrap();
     let reader = std::io::BufReader::new(file);
     let mut rdr = csv::ReaderBuilder::new()
         .delimiter(b'\t')
         .from_reader(reader);
-    let mut ans = vec![];
-    for result in rdr.deserialize() {
-        let record: FreqRecord = result.unwrap();
-        ans.push(record);
-    }
-    ans
+    let v: Vec<CommonEntry> = rdr
+        .deserialize::<FreqRecord>()
+        .map(|r| r.unwrap())
+        .map(WordEntry::from)
+        .map(CommonEntry::from)
+        .collect();
+    v.into_iter()
 }

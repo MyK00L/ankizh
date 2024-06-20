@@ -9,7 +9,7 @@ pub struct CedictEntry {
     pub pinyin: Vec<String>,
     pub definitions: IndexMap<String, String>,
 }
-impl From<CedictEntry> for Entry {
+impl From<CedictEntry> for WordEntry {
     fn from(o: CedictEntry) -> Self {
         Self {
             id: o.simplified,
@@ -34,9 +34,9 @@ impl From<CedictEntry> for Entry {
     }
 }
 
-pub fn get_cedict() -> Vec<CedictEntry> {
+pub fn get_cedict() -> impl Iterator<Item = CommonEntry> {
     let file = std::fs::File::open("res/all_cedict.json").unwrap();
     let reader = std::io::BufReader::new(file);
     let hm: IndexMap<String, CedictEntry> = serde_json::from_reader(reader).unwrap();
-    hm.into_values().collect()
+    hm.into_values().map(WordEntry::from).map(CommonEntry::from)
 }

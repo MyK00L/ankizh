@@ -6,7 +6,7 @@ pub struct AudioPath {
     id: String,
     path: PathBuf,
 }
-impl From<AudioPath> for Entry {
+impl From<AudioPath> for WordEntry {
     fn from(a: AudioPath) -> Self {
         Self {
             id: a.id,
@@ -16,7 +16,7 @@ impl From<AudioPath> for Entry {
     }
 }
 
-pub fn get_word_audios() -> Vec<AudioPath> {
+pub fn get_word_audios() -> impl Iterator<Item = CommonEntry> {
     let mut ans = vec![];
     for entry in std::fs::read_dir("res/audio-cmn/64k/hsk").unwrap() {
         let path = entry.unwrap().path();
@@ -29,5 +29,5 @@ pub fn get_word_audios() -> Vec<AudioPath> {
             ans.push(AudioPath { id, path });
         }
     }
-    ans
+    ans.into_iter().map(WordEntry::from).map(CommonEntry::from)
 }

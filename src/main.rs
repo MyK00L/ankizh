@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unreachable_code)]
+#![allow(unused)]
 #![feature(path_file_prefix)]
 mod anim_cjk;
 mod audio;
@@ -32,7 +35,7 @@ fn main_model() -> Model {
         Template::new("zh_writing").qfmt(&front).afmt(&back)
     };
 
-    let main_model = Model::new(
+    Model::new(
         MODEL_ID,
         "hanziM",
         vec![
@@ -44,26 +47,20 @@ fn main_model() -> Model {
             Field::new("unique"),
         ],
         vec![template_writing],
-    );
-
-    main_model
+    )
 }
 
 use std::collections::{HashMap, HashSet};
-fn process_entries() -> Vec<Entry> {
-    let ag = anim_cjk::parse_graphics_zh_hans()
-        .into_iter()
-        .map(Entry::from);
-    let ad = anim_cjk::parse_dictionary_zh_hans()
-        .into_iter()
-        .map(Entry::from);
-    let cd = cedict::get_cedict().into_iter().map(Entry::from);
-    let fr = freq::get_records().into_iter().map(Entry::from);
-    let f2 = freq2::get_records().into_iter().map(Entry::from);
-    let wa = audio::get_word_audios().into_iter().map(Entry::from);
-    let hs = hsk::get_hsks().into_iter().map(Entry::from);
+fn process_entries() -> Vec<CommonEntry> {
+    let ag = anim_cjk::parse_graphics_zh_hans();
+    let ad = anim_cjk::parse_dictionary_zh_hans();
+    let cd = cedict::get_cedict();
+    let fr = freq::get_records();
+    let f2 = freq2::get_records();
+    let wa = audio::get_word_audios();
+    let hs = hsk::get_hsks();
 
-    let mut hm = HashMap::<String, Entry>::new();
+    let mut hm = HashMap::<EntryId, CommonEntry>::new();
     for e in ag
         .chain(ad)
         .chain(cd)
@@ -72,49 +69,22 @@ fn process_entries() -> Vec<Entry> {
         .chain(wa)
         .chain(hs)
     {
-        let hme = hm.entry(e.id.clone()).or_default();
-        hme.id = e.id.clone();
-        hme.merge_add(e);
-    }
-
-    // add character-based writing for single character entries
-    for (key, val) in hm
-        .iter_mut()
-        .filter(|(key, val)| key.chars().count() > 1 && val.writing.is_empty())
-    {
-        let c = key.chars().next().unwrap();
-        val.writing.push(CharWriting::Char(c));
-    }
-
-    // add stuff to multi-character words from single character words
-    {
-        let keys = hm.keys().cloned().collect::<Vec<_>>();
-        for key in keys.into_iter().filter(|x| x.chars().count() > 1) {
-            for c in key.clone().chars() {
-                let cs: String = c.into();
-                if !hm.contains_key(&cs) {
-                    let val = hm.get_mut(&key).unwrap();
-                    val.writing.push(CharWriting::Char(c));
-                    continue;
-                }
-
-                let mut writing = hm.get(&cs).unwrap().writing.clone();
-                let val = hm.get_mut(&key).unwrap();
-
-                if !val.dependencies.contains(&cs) {
-                    val.dependencies.push(cs);
-                }
-                //TODO: writing might be empty (or not exist) :)
-                val.writing.append(&mut writing);
-            }
+        if let Some(hme) = hm.get_mut(&e.id()) {
+            hme.merge(e);
+        } else {
+            hm.insert(e.id(), e);
         }
     }
 
-    let mut entries: Vec<Entry> = hm.values().cloned().collect();
-    entries.sort();
+    // TODO: character-based writing for single-character entries
+    // TODO: writing for multiple-character entries
+
+    let mut entries: Vec<CommonEntry> = hm.values().cloned().collect();
+    entries.sort_by_cached_key(|e| e.priority());
+
     let mut ans = vec![];
-    let mut done = HashSet::<String>::new();
-    let mut stack: Vec<Vec<String>> = vec![entries.iter().map(|x| x.id.clone()).collect()];
+    let mut done = HashSet::<EntryId>::new();
+    let mut stack: Vec<Vec<EntryId>> = vec![entries.iter().map(|x| x.id()).collect()];
     while !stack.is_empty() {
         while stack.last().is_some_and(|x| x.is_empty()) {
             stack.pop();
@@ -123,20 +93,19 @@ fn process_entries() -> Vec<Entry> {
         if let Some(lv) = stack.last_mut() {
             if let Some(eid) = lv.last().cloned() {
                 let e = hm.get(&eid).unwrap().clone();
-                if !done.contains(&e.id) {
-                    let mut deps: Vec<String> = e
-                        .dependencies
-                        .iter()
-                        .filter(|x| !done.contains(*x) && hm.contains_key(*x))
-                        .cloned()
+                if !done.contains(&e.id()) {
+                    let mut deps: Vec<EntryId> = e
+                        .dependencies()
+                        .into_iter()
+                        .filter(|x| !done.contains(x) && hm.contains_key(x))
                         .collect();
                     if deps.is_empty() {
-                        done.insert(e.id.clone());
+                        done.insert(e.id().clone());
                         ans.push(e);
                         lv.pop();
                         //eprintln!("made {}", eid);
                     } else {
-                        deps.sort_by(|a, b| hm.get(a).unwrap().cmp(hm.get(b).unwrap()));
+                        deps.sort_by_cached_key(|a| hm.get(a).unwrap().priority());
                         //eprintln!("to make a {}:{} i need {:?}", eid, e.total_priority(), deps);
                         stack.push(deps);
                     }
@@ -155,15 +124,10 @@ fn process_entries() -> Vec<Entry> {
 }
 
 fn main() {
-    let lg = lp_grammar::get_records();
-    for l in lg {
-        println!("{:?}", l);
-    }
-    return;
-
     let entries = process_entries();
+    eprintln!("entries.len: {}", entries.len());
     for entry in entries.into_iter().take(10000) {
-        println!("[{},{}]", entry.id, entry.total_priority());
+        println!("[{:?},{}]", entry.id(), entry.priority());
     }
 
     return;

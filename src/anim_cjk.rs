@@ -7,7 +7,7 @@ pub struct GraphicsEntry {
     pub strokes: Vec<String>,
     medians: Vec<Vec<(f32, f32)>>,
 }
-impl From<GraphicsEntry> for Entry {
+impl From<GraphicsEntry> for WordEntry {
     fn from(o: GraphicsEntry) -> Self {
         Self {
             id: o.character.into(),
@@ -31,17 +31,18 @@ pub struct DictionaryEntry {
     pub decomposition: String,
     pub radical: String,
 }
-impl From<DictionaryEntry> for Entry {
+impl From<DictionaryEntry> for WordEntry {
     fn from(o: DictionaryEntry) -> Self {
-        let radicals: Vec<String> = o
+        let radical_deps: Vec<EntryId> = o
             .decomposition
             .chars()
             .filter(|x| is_radical(*x))
             .map(Into::<String>::into)
+            .map(EntryId::Word)
             .collect();
         Self {
             id: o.character.into(),
-            dependencies: radicals,
+            dependencies: radical_deps,
             ..Default::default()
         }
     }
@@ -50,21 +51,19 @@ impl From<DictionaryEntry> for Entry {
 use std::fs::File;
 use std::io::{self, BufRead};
 
-pub fn parse_graphics_zh_hans() -> Vec<GraphicsEntry> {
+pub fn parse_graphics_zh_hans() -> impl Iterator<Item = CommonEntry> {
     let file = File::open("res/graphicsZhHans.txt").unwrap();
     let lines = io::BufReader::new(file).lines().map_while(Result::ok);
-    let mut ans = Vec::<GraphicsEntry>::new();
-    for line in lines {
-        ans.push(serde_json::from_str(&line).unwrap());
-    }
-    ans
+    lines
+        .map(|x| serde_json::from_str::<GraphicsEntry>(&x).unwrap())
+        .map(WordEntry::from)
+        .map(CommonEntry::from)
 }
-pub fn parse_dictionary_zh_hans() -> Vec<DictionaryEntry> {
+pub fn parse_dictionary_zh_hans() -> impl Iterator<Item = CommonEntry> {
     let file = File::open("res/dictionaryZhHans.txt").unwrap();
     let lines = io::BufReader::new(file).lines().map_while(Result::ok);
-    let mut ans = Vec::<DictionaryEntry>::new();
-    for line in lines {
-        ans.push(serde_json::from_str(&line).unwrap());
-    }
-    ans
+    lines
+        .map(|x| serde_json::from_str::<DictionaryEntry>(&x).unwrap())
+        .map(WordEntry::from)
+        .map(CommonEntry::from)
 }

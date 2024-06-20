@@ -8,7 +8,7 @@ pub struct HskEntry {
     id: String,
     level: u8,
 }
-impl From<HskEntry> for Entry {
+impl From<HskEntry> for WordEntry {
     fn from(h: HskEntry) -> Self {
         Self {
             id: h.id,
@@ -29,7 +29,7 @@ fn get_hsk(filename: &str, lev: u8) -> impl Iterator<Item = HskEntry> {
         })
 }
 
-pub fn get_hsks() -> Vec<HskEntry> {
+pub fn get_hsks() -> impl Iterator<Item = CommonEntry> {
     let h1 = get_hsk("res/HSK-3.0/HSK List/HSK 1.txt", 1);
     let h2 = get_hsk("res/HSK-3.0/HSK List/HSK 2.txt", 2);
     let h3 = get_hsk("res/HSK-3.0/HSK List/HSK 3.txt", 3);
@@ -44,5 +44,6 @@ pub fn get_hsks() -> Vec<HskEntry> {
         .chain(h5)
         .chain(h6)
         .chain(h789)
-        .collect()
+        .map(WordEntry::from)
+        .map(CommonEntry::from)
 }
