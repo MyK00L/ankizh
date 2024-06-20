@@ -109,12 +109,18 @@ impl WordEntry {
         self.audio_file = self.audio_file.take().or(o.audio_file);
         self.hsk_lev = self.hsk_lev.take().or(o.hsk_lev);
     }
-    fn is_missing_writing(&self) -> bool {
+    fn is_missing_some_writing(&self) -> bool {
         self.writing.len() != self.id.chars().count()
             || self
                 .writing
                 .iter()
                 .any(|x| matches!(x, CharWriting::Char(_)))
+    }
+    fn is_missing_all_writing(&self) -> bool {
+        !self
+            .writing
+            .iter()
+            .any(|x| matches!(x, CharWriting::Strokes(_)))
     }
 }
 impl Entry for WordEntry {
@@ -146,12 +152,36 @@ impl Entry for WordEntry {
         }
     }
     fn compact_display(&self) -> String {
-        if self.is_missing_writing() {
+        if self.is_missing_some_writing() {
             format!("W {}:{} !MissingWriting!", self.id, self.priority())
         } else {
             format!("W {}:{}", self.id, self.priority())
         }
     }
+    fn to_delete(&self) -> bool {
+        ((!self.id.chars().any(is_good_cjk))
+            || if self.id.chars().count() == 1 {
+                (self.is_missing_all_writing() && self.definitions.is_empty())
+            } else {
+                self.definitions.is_empty()
+            })
+            && self.hsk_lev.is_none()
+    }
+}
+fn is_good_cjk(c: char) -> bool {
+    let cp: u32 = c.into();
+    (0x4E00..=0x9FFF).contains(&cp)
+        || (0x3400..=0x4DBF).contains(&cp)
+        || (0x20000..=0x2A6DF).contains(&cp)
+        || (0x2A700..=0x2B73F).contains(&cp)
+        || (0x2B740..=0x2B81F).contains(&cp)
+        || (0x2B820..=0x2CEAF).contains(&cp)
+        || (0x2CEB0..=0x2EBEF).contains(&cp)
+        || (0x2EBF0..=0x2EE5F).contains(&cp)
+        || (0x2F800..=0x2FA1F).contains(&cp)
+        || (0xF900..=0xFAFF).contains(&cp)
+        || (0x2F800..=0x2FA1F).contains(&cp)
+        || (0x2E80..=0x2EFF).contains(&cp)
 }
 
 #[derive(Clone, Debug)]
@@ -178,6 +208,9 @@ impl Entry for SyllableEntry {
     }
     fn compact_display(&self) -> String {
         format!("S {}:{}", self.id, self.priority())
+    }
+    fn to_delete(&self) -> bool {
+        false
     }
 }
 
@@ -232,6 +265,9 @@ impl Entry for GrammarEntry {
     fn compact_display(&self) -> String {
         format!("G {}:{}", self.example.zh, self.priority())
     }
+    fn to_delete(&self) -> bool {
+        false
+    }
 }
 
 #[allow(clippy::enum_variant_names)]
@@ -258,4 +294,5 @@ pub trait Entry {
     fn dependencies(&self) -> Vec<EntryId>;
     fn merge(&mut self, o: CommonEntry);
     fn compact_display(&self) -> String;
+    fn to_delete(&self) -> bool;
 }

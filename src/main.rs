@@ -80,8 +80,6 @@ fn process_entries() -> Vec<CommonEntry> {
         }
     }
 
-    // TODO: character-based writing for single-character entries
-    // TODO: writing for multiple-character entries
     {
         let keys: Vec<_> = hm
             .keys()
@@ -117,8 +115,10 @@ fn process_entries() -> Vec<CommonEntry> {
             }
         }
     }
+    hm.retain(|_k, v| !v.to_delete());
 
     let mut entries: Vec<CommonEntry> = hm.values().cloned().collect();
+
     entries.sort_by_cached_key(|e| e.priority());
 
     let mut ans = vec![];
@@ -155,9 +155,7 @@ fn process_entries() -> Vec<CommonEntry> {
         }
     }
 
-    if ans.len() != entries.len() {
-        eprintln!("NOT EVERYTHING INCLUDED?");
-    }
+    assert_eq!(ans.len(), entries.len());
 
     ans
 }
@@ -168,6 +166,7 @@ fn main() {
     for entry in entries
         .into_iter()
         .filter(|x| !matches!(x, CommonEntry::SyllableEntry(_)))
+        .skip(20000)
         .take(600)
     {
         println!("{}", entry.compact_display());
