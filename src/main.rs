@@ -18,7 +18,7 @@ use common::*;
 use genanki_rs::*;
 use std::io::Write;
 
-const MAX_ENTRIES: usize = 32;
+const MAX_ENTRIES: usize = 256;
 
 use std::collections::{HashMap, HashSet};
 fn process_entries() -> Vec<CommonEntry> {
@@ -28,7 +28,8 @@ fn process_entries() -> Vec<CommonEntry> {
     let fr = freq::get_records();
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
-    //let sa = audio::get_syllable_audios();
+    // TODO: remove take
+    let sa = audio::get_syllable_audios().take(2);
     let hs = hsk::get_hsks();
     let lg = lp_grammar::get_records();
 
@@ -39,7 +40,7 @@ fn process_entries() -> Vec<CommonEntry> {
         .chain(fr)
         .chain(f2)
         .chain(wa)
-        //.chain(sa)
+        .chain(sa)
         .chain(hs)
         .chain(lg)
     {
@@ -168,8 +169,6 @@ fn main() {
 
     let notes = entries
         .into_iter()
-        //TODO: remove filter
-        .filter(|x| matches!(x, CommonEntry::WordEntry(_)))
         .enumerate()
         .map(|(idx, x)| x.into_note(idx));
 

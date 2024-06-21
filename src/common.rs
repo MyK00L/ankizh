@@ -206,7 +206,7 @@ impl Entry for SyllableEntry {
         NotNan::new(10f32).unwrap()
     }
     fn into_note(self, idx: usize) -> genanki_rs::Note {
-        todo!()
+        crate::anki::syllable_entry_to_note(self, idx)
     }
     fn id(&self) -> EntryId {
         EntryId::Syllable(self.id.clone())
@@ -224,7 +224,7 @@ impl Entry for SyllableEntry {
         false
     }
     fn media(&self) -> Vec<String> {
-        todo!();
+        vec![self.audio_file.as_os_str().to_str().unwrap().to_owned()]
     }
 }
 
@@ -263,7 +263,7 @@ impl Entry for GrammarEntry {
         hp * 0.5 + hp * fp * 0.25
     }
     fn into_note(self, idx: usize) -> genanki_rs::Note {
-        todo!()
+        crate::anki::grammar_entry_to_note(self, idx)
     }
     fn id(&self) -> EntryId {
         EntryId::Grammar(self.id.clone())

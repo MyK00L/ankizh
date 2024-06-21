@@ -39,7 +39,7 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
     <h4>{{traditional}}</h4>
     <ol>{{definitions}}</ol>
     <ul>{{examples}}</ul>
-    <p>HSK: {{#hsk}}{{hsk}}{{/hsk}}{{^hsk}}no{{/hsk}}</p>
+    <p>HSK: {{hsk}}</p>
     <details>
         <summary>Extra</summary>
         {{extra}}
@@ -99,7 +99,7 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
             BACK_JS,
             POST_HTML_COMMON
         );
-        Template::new("zh_writing").qfmt(FRONT).afmt(BACK)
+        Template::new("zh_word_writing").qfmt(FRONT).afmt(BACK)
     };
 
     let template_meaning = {
@@ -118,7 +118,7 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
 
         const FRONT: &str = concatcp!(PRE_HTML_COMMON, FRONT_INNER, POST_HTML_COMMON);
         const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
-        Template::new("zh_meaning").qfmt(FRONT).afmt(BACK)
+        Template::new("zh_word_meaning").qfmt(FRONT).afmt(BACK)
     };
     let template_reading = {
         const FRONT_INNER: &str = r#"
@@ -128,7 +128,7 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
         const BACK_INNER: &str = BACK_COMMON;
         const FRONT: &str = concatcp!(PRE_HTML_COMMON, FRONT_INNER, POST_HTML_COMMON);
         const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
-        Template::new("zh_reading").qfmt(FRONT).afmt(BACK)
+        Template::new("zh_word_reading").qfmt(FRONT).afmt(BACK)
     };
 
     Model::new_with_options(
@@ -254,13 +254,125 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
                 })
                 .fold(String::new(), |acc, e| acc + &e),
             // hsk
-            &we.hsk_lev.map(|x| x.to_string()).unwrap_or_default(),
+            &we.hsk_lev
+                .map(|x| x.to_string())
+                .unwrap_or(String::from("no")),
             // audio
             &we.audio_file
                 .map(|x| format!("[sound:{}]", x.file_name().unwrap().to_str().unwrap()))
                 .unwrap_or_default(),
             // extra
             "",
+        ],
+    )
+    .unwrap()
+}
+
+pub static SYLLABLE_MODEL: LazyLock<Model> = LazyLock::new(|| {
+    const MODEL_ID: i64 = 4446634760010140961;
+    let template_listening = {
+        const FRONT_INNER: &str =
+            r#"<h2>What is the <b style="color:red">pinyin</b>?</h2><h1>{{audio}}</h1>"#;
+        const BACK_INNER: &str = r#"<h1>{{audio}}</h1><h1>{{pinyin}}</h1>"#;
+        const FRONT: &str = concatcp!(PRE_HTML_COMMON, FRONT_INNER, POST_HTML_COMMON);
+        const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
+        Template::new("zh_syllable_listening")
+            .qfmt(FRONT)
+            .afmt(BACK)
+    };
+    Model::new_with_options(
+        MODEL_ID,
+        "hanziM",
+        vec![
+            Field::new("sort_field"),
+            Field::new("pinyin"),
+            Field::new("audio"),
+        ],
+        vec![template_listening],
+        Some(CSS_COMMON),
+        None,
+        None,
+        None,
+        None,
+    )
+});
+pub fn syllable_entry_to_note(se: SyllableEntry, idx: usize) -> Note {
+    Note::new(
+        SYLLABLE_MODEL.clone(),
+        vec![
+            // sort_field
+            &format!("{:08}", idx),
+            // pinyin
+            &se.id,
+            &format!(
+                "[sound:{}]",
+                se.audio_file.file_name().unwrap().to_str().unwrap()
+            ),
+        ],
+    )
+    .unwrap()
+}
+
+pub static GRAMMAR_MODEL: LazyLock<Model> = LazyLock::new(|| {
+    const MODEL_ID: i64 = -284526913684597160;
+    const BACK_COMMON: &str = r#"<h3><ruby>{{szh}}<rt>{{spy}}</rt></ruby></h3><h3>{{sen}}</h3><hr><h3><ruby>{{ezh}}<rt>{{epy}}</rt></ruby><h3>{{een}}</h3><p>HSK: {{hsk}}</p>"#;
+    let template_zhen = {
+        const FRONT_INNER: &str = r#"<h2>What is the <b style="color:red">grammatical structure</b> in english?</h2><h1>{{szh}}</h1>"#;
+        const BACK_INNER: &str = BACK_COMMON;
+        const FRONT: &str = concatcp!(PRE_HTML_COMMON, FRONT_INNER, POST_HTML_COMMON);
+        const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
+        Template::new("zh_grammar_zhen").qfmt(FRONT).afmt(BACK)
+    };
+    let template_enzh = {
+        const FRONT_INNER: &str = r#"<h2>What is the <b style="color:red">grammatical structure</b> in chinese?</h2><h1>{{sen}}</h1>"#;
+        const BACK_INNER: &str = BACK_COMMON;
+        const FRONT: &str = concatcp!(PRE_HTML_COMMON, FRONT_INNER, POST_HTML_COMMON);
+        const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
+        Template::new("zh_grammar_enzh").qfmt(FRONT).afmt(BACK)
+    };
+    Model::new_with_options(
+        MODEL_ID,
+        "hanziM",
+        vec![
+            Field::new("sort_field"),
+            Field::new("szh"),
+            Field::new("sen"),
+            Field::new("spy"),
+            Field::new("ezh"),
+            Field::new("een"),
+            Field::new("epy"),
+            Field::new("hsk"),
+        ],
+        vec![template_zhen, template_enzh],
+        Some(CSS_COMMON),
+        None,
+        None,
+        None,
+        None,
+    )
+});
+pub fn grammar_entry_to_note(ge: GrammarEntry, idx: usize) -> Note {
+    Note::new(
+        GRAMMAR_MODEL.clone(),
+        vec![
+            // sort_field
+            &format!("{:08}", idx),
+            // szh
+            &ge.structure.zh,
+            // sen
+            &ge.structure.en,
+            // spy
+            &ge.structure.py,
+            // ezh
+            &ge.example.zh,
+            // een
+            &ge.example.en,
+            // epy
+            &ge.example.py,
+            // hsk
+            &ge.hsk_lev
+                .map(|x| x.to_string())
+                .unwrap_or(String::from("no")),
         ],
     )
     .unwrap()
