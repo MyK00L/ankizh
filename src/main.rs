@@ -18,7 +18,7 @@ use common::*;
 use genanki_rs::*;
 use std::io::Write;
 
-const MAX_ENTRIES: usize = 256;
+const MAX_ENTRIES: usize = 32;
 
 use std::collections::{HashMap, HashSet};
 fn process_entries() -> Vec<CommonEntry> {
@@ -51,6 +51,7 @@ fn process_entries() -> Vec<CommonEntry> {
     }
 
     {
+        // add writings
         let keys: Vec<_> = hm
             .keys()
             .filter(|k| {
@@ -81,6 +82,21 @@ fn process_entries() -> Vec<CommonEntry> {
 
                 if let CommonEntry::WordEntry(w) = hm.get_mut(&key).unwrap() {
                     w.writing = wr;
+                }
+            }
+        }
+    }
+    // add definitions to some single-character entries from unicode names
+    for (_, entry) in hm.iter_mut() {
+        if let CommonEntry::WordEntry(w) = entry {
+            if w.id.chars().count() == 1 && w.definitions.is_empty() {
+                let c = w.id.chars().next().unwrap();
+                let name = unicode_names2::name(c).unwrap().to_string();
+                if !name.contains(&format!("{:X}", c as u32)) {
+                    w.definitions.push(Definition {
+                        pinyin: None,
+                        english: vec![name],
+                    });
                 }
             }
         }

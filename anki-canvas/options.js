@@ -1,8 +1,8 @@
 window.AnkiCanvasOptions = {
-  frontCanvasSize: 300,
-  frontLineWidth: 7,
-  backCanvasSize: 150,
-  backLineWidth: 3.5,
+  frontCanvasSize: 512,
+  frontLineWidth: 8,
+  backCanvasSize: 256,
+  backLineWidth: 4,
 
   // 'auto' is a special value that will automatically select either 'light' or
   // 'dark' depending on Anki's "Night Mode" status. If you wish to force a

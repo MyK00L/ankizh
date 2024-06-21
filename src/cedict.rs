@@ -18,7 +18,7 @@ impl From<CedictEntry> for WordEntry {
             .definitions
             .iter()
             .map(|x| Definition {
-                pinyin: Some(x.0.clone()),
+                pinyin: Some(process_pinyin(x.0)),
                 english: x
                     .1
                     .split(';')

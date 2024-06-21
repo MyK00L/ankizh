@@ -6,11 +6,17 @@ use std::sync::LazyLock;
 pub const DECK_ID: i64 = 9030804782668984910;
 
 const PRE_HTML_COMMON: &str = r#"<span lang="zh-Hans">"#;
-const POST_HTML_COMMON: &str = r#"</span>"#;
+const POST_HTML_COMMON: &str = r#"<p style="display:none;">{{sort_field}}</p></span>"#;
 
 const CSS_COMMON: &str = r#"
+body {
+    font-size: 2em;
+}
 h1,h2,h3,h4,#ac-back,#ac-front,.tc {
     text-align: center;
+}
+h2,h3,h4 {
+    font-weight: 600;
 }
 rb {
     font-size: 0.5em;
@@ -28,16 +34,17 @@ ol {
 
 pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
     const BACK_COMMON: &str = r#"
-    {{#audio}}{{audio}}{{/audio}}
     <h1>{{word}}</h1>
     <h2>{{pinyin}}</h2>
     <h4>{{traditional}}</h4>
     <ol>{{definitions}}</ol>
     <ul>{{examples}}</ul>
+    <p>HSK: {{#hsk}}{{hsk}}{{/hsk}}{{^hsk}}no{{/hsk}}</p>
     <details>
         <summary>Extra</summary>
         {{extra}}
     </details>
+    {{#audio}}<p class=tc>{{audio}}</p>{{/audio}}
     "#;
 
     const MODEL_ID: i64 = 7568361786070221454;
@@ -61,17 +68,18 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
         const FRONT_INNER: &str = r#"
         <div id="ac-front"></div>
         {{#audio}}
-            {{audio}}
-            {{hint:pinyin}}
+            <p class="tc">{{audio}}</p>
+            <p class="tc">{{hint:pinyin}}</p>
         {{/audio}}
         {{^audio}}
-            {{pinyin}}
+            <p class="tc">{{pinyin}}</p>
         {{/audio}}
-        <br/>{{hint:definitions}}
+        {{hint:definitions}}
         "#;
         const BACK_INNER: &str = concatcp!(
             r#"
         <div id="ac-back"></div>
+        <br/>
         {{writing}}
         "#,
             BACK_COMMON
@@ -94,6 +102,35 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
         Template::new("zh_writing").qfmt(FRONT).afmt(BACK)
     };
 
+    let template_meaning = {
+        const FRONT_INNER: &str = r#"
+        <h2>What are the <b style="color:red;">meanings</b>?</h2>
+        {{#audio}}
+            <h2>{{audio}}</h2>
+            <h2>{{hint:pinyin}}</h2>
+        {{/audio}}
+        {{^audio}}
+            <h2>{{pinyin}}</h2>
+        {{/audio}}
+        <h2>{{hint:word}}</h2>
+        "#;
+        const BACK_INNER: &str = BACK_COMMON;
+
+        const FRONT: &str = concatcp!(PRE_HTML_COMMON, FRONT_INNER, POST_HTML_COMMON);
+        const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
+        Template::new("zh_meaning").qfmt(FRONT).afmt(BACK)
+    };
+    let template_reading = {
+        const FRONT_INNER: &str = r#"
+        <h2>What are the <b style="color:red;">readings</b>?</h2>
+        <h1>{{word}}</h1>
+        "#;
+        const BACK_INNER: &str = BACK_COMMON;
+        const FRONT: &str = concatcp!(PRE_HTML_COMMON, FRONT_INNER, POST_HTML_COMMON);
+        const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
+        Template::new("zh_reading").qfmt(FRONT).afmt(BACK)
+    };
+
     Model::new_with_options(
         MODEL_ID,
         "hanziM",
@@ -109,7 +146,7 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
             Field::new("audio"),
             Field::new("extra"),
         ],
-        vec![template_writing],
+        vec![template_writing, template_meaning, template_reading],
         Some(CSS_COMMON),
         None,
         None,
@@ -181,13 +218,12 @@ fn html_from_writing(w: Vec<CharWriting>) -> String {
     }
     format!(r#"<p class="tc">{}</p>"#, cw.join(""))
 }
-
 pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
     Note::new(
         WORD_MODEL.clone(),
         vec![
             // sort_field
-            &idx.to_string(),
+            &format!("{:08}", idx),
             // word
             &we.id,
             // pinyin

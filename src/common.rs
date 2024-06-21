@@ -180,7 +180,8 @@ impl Entry for WordEntry {
     fn to_delete(&self) -> bool {
         ((!self.id.chars().any(is_good_cjk))
             || if self.id.chars().count() == 1 {
-                (self.is_missing_all_writing() && self.definitions.is_empty())
+                self.definitions.is_empty()
+                    && (self.is_missing_all_writing() || self.pinyin.is_empty())
             } else {
                 self.definitions.is_empty()
             })
