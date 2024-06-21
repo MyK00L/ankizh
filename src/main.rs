@@ -138,7 +138,8 @@ fn main() {
     let entries: Vec<CommonEntry> = if false {
         let mut entries = process_entries();
         let file = std::fs::File::create("out/cache.ron").unwrap();
-        ron::ser::to_writer_pretty(file, &entries, ron::ser::PrettyConfig::default()).unwrap();
+        let writer = std::io::BufWriter::new(file);
+        ron::ser::to_writer_pretty(writer, &entries, ron::ser::PrettyConfig::default()).unwrap();
         return;
         unreachable!();
     } else {
@@ -147,8 +148,12 @@ fn main() {
         ron::de::from_reader(reader).unwrap()
     };
 
+    let media: Vec<String> = entries.iter().flat_map(|x| x.media()).collect();
+
     let notes = entries
         .into_iter()
+        //TODO: remove filter
+        .filter(|x| matches!(x, CommonEntry::WordEntry(_)))
         .enumerate()
         .map(|(idx, x)| x.into_note(idx));
 
@@ -157,5 +162,9 @@ fn main() {
         deck.add_note(note);
     }
 
-    deck.write_to_file("out/test.apkg").unwrap();
+    let mut package = Package::new(vec![deck], media.iter().map(|x| x.as_str()).collect()).unwrap();
+
+    let file = std::fs::File::create("out/test.apkg").unwrap();
+    let writer = std::io::BufWriter::new(file);
+    package.write(writer).unwrap();
 }

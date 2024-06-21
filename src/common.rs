@@ -4,6 +4,21 @@ use ordered_float::NotNan;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
+pub fn is_good_cjk(c: char) -> bool {
+    let cp: u32 = c.into();
+    (0x4E00..=0x9FFF).contains(&cp)
+        || (0x3400..=0x4DBF).contains(&cp)
+        || (0x20000..=0x2A6DF).contains(&cp)
+        || (0x2A700..=0x2B73F).contains(&cp)
+        || (0x2B740..=0x2B81F).contains(&cp)
+        || (0x2B820..=0x2CEAF).contains(&cp)
+        || (0x2CEB0..=0x2EBEF).contains(&cp)
+        || (0x2EBF0..=0x2EE5F).contains(&cp)
+        || (0x2F800..=0x2FA1F).contains(&cp)
+        || (0xF900..=0xFAFF).contains(&cp)
+        || (0x2F800..=0x2FA1F).contains(&cp)
+        || (0x2E80..=0x2EFF).contains(&cp)
+}
 fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
     f: F,
 ) -> std::thread::Result<R> {
@@ -132,22 +147,7 @@ impl Entry for WordEntry {
         self.total_priority()
     }
     fn into_note(self, idx: usize) -> genanki_rs::Note {
-        genanki_rs::Note::new(
-            WORD_MODEL.clone(),
-            vec![
-                &format!("{}", idx),
-                &self.id,
-                &format!("{:?}", self.pinyin),
-                &format!("{:?}", self.definitions),
-                &format!("{:?}", self.writing),
-                &format!("{:?}", self.traditional),
-                &format!("{:?}", self.examples),
-                &format!("{:?}", self.hsk_lev),
-                &format!("{:?}", self.audio_file),
-                &format!("{:?}", "extra"),
-            ],
-        )
-        .unwrap()
+        crate::anki::word_entry_to_note(self, idx)
     }
     fn id(&self) -> EntryId {
         EntryId::Word(self.id.clone())
@@ -186,21 +186,12 @@ impl Entry for WordEntry {
             })
             && self.hsk_lev.is_none()
     }
-}
-pub fn is_good_cjk(c: char) -> bool {
-    let cp: u32 = c.into();
-    (0x4E00..=0x9FFF).contains(&cp)
-        || (0x3400..=0x4DBF).contains(&cp)
-        || (0x20000..=0x2A6DF).contains(&cp)
-        || (0x2A700..=0x2B73F).contains(&cp)
-        || (0x2B740..=0x2B81F).contains(&cp)
-        || (0x2B820..=0x2CEAF).contains(&cp)
-        || (0x2CEB0..=0x2EBEF).contains(&cp)
-        || (0x2EBF0..=0x2EE5F).contains(&cp)
-        || (0x2F800..=0x2FA1F).contains(&cp)
-        || (0xF900..=0xFAFF).contains(&cp)
-        || (0x2F800..=0x2FA1F).contains(&cp)
-        || (0x2E80..=0x2EFF).contains(&cp)
+    fn media(&self) -> Vec<String> {
+        self.audio_file
+            .iter()
+            .map(|x| x.as_os_str().to_str().unwrap().to_owned())
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -230,6 +221,9 @@ impl Entry for SyllableEntry {
     }
     fn to_delete(&self) -> bool {
         false
+    }
+    fn media(&self) -> Vec<String> {
+        todo!();
     }
 }
 
@@ -287,6 +281,9 @@ impl Entry for GrammarEntry {
     fn to_delete(&self) -> bool {
         false
     }
+    fn media(&self) -> Vec<String> {
+        vec![]
+    }
 }
 
 #[allow(clippy::enum_variant_names)]
@@ -314,4 +311,5 @@ pub trait Entry {
     fn merge(&mut self, o: CommonEntry);
     fn compact_display(&self) -> String;
     fn to_delete(&self) -> bool;
+    fn media(&self) -> Vec<String>;
 }
