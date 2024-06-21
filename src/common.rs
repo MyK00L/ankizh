@@ -55,8 +55,13 @@ pub struct Priority {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Stroke {
+    pub path: String,
+    pub start: (i32, i32),
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum CharWriting {
-    Strokes(Vec<String>),
+    Strokes(Vec<Stroke>),
     Char(char),
 }
 

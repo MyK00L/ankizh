@@ -180,6 +180,7 @@ fn debug_entries(entries: Vec<CommonEntry>) {
     }
 }
 
+//TODO: make it clear where the strokes begin
 fn main() {
     //cache_entries();return;
     let entries = get_cached_entries();

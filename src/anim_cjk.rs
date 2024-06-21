@@ -6,12 +6,21 @@ pub struct GraphicsEntry {
     pub character: char,
     pub strokes: Vec<String>,
     #[allow(unused)]
-    medians: Vec<Vec<(f32, f32)>>, // TODO: use this for automatic checking if character was drawn correctly?
+    medians: Vec<Vec<(i32, i32)>>, // TODO: use this for automatic checking if character was drawn correctly?
 }
 impl From<GraphicsEntry> for WordEntry {
     fn from(o: GraphicsEntry) -> Self {
         let mut w = WordEntry::from_id(o.character.into());
-        w.writing = vec![CharWriting::Strokes(o.strokes)];
+        w.writing = vec![CharWriting::Strokes(
+            o.strokes
+                .into_iter()
+                .zip(o.medians.into_iter())
+                .map(|(s, m)| Stroke {
+                    path: s,
+                    start: m[0],
+                })
+                .collect(),
+        )];
         w
     }
 }

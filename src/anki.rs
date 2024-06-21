@@ -199,17 +199,31 @@ fn anki_canvas_contrast(idx: usize) -> String {
     let (r, g, b) = rgb(h, s, v);
     format!("#{:02x}{:02x}{:02x}", r, g, b)
 }
-fn svg_from_strokes(strokes: Vec<String>, i0: usize) -> String {
+fn svg_from_strokes(strokes: Vec<Stroke>, i0: usize) -> String {
     format!(
-        r#"<svg class="charvg" viewbox="0 0 1024 1024"><g transform="scale(1, -1) translate(0, -900)">{}</g></svg>"#,
+        r#"<svg class="charvg" viewbox="0 0 1024 1024"><g transform="scale(1, -1) translate(0, -900)">{}</g>{}</svg>"#,
         strokes
             .iter()
             .enumerate()
-            .map(|(i, stroke)| format!(
-                r#"<path d="{}" fill="{}"></path>"#,
-                stroke,
-                anki_canvas_contrast(i0 + i)
-            ))
+            .map(|(i, stroke)| {
+                format!(
+                    r#"<path d="{}" fill="{}"></path>"#,
+                    stroke.path,
+                    anki_canvas_contrast(i0 + i),
+                )
+            })
+            .fold(String::new(), |acc, e| acc + &e),
+        strokes
+            .iter()
+            .enumerate()
+            .map(|(i, stroke)| {
+                format!(
+                    r#"<text x="{}" y="{}" stroke="white" fill="black">{}</text>"#,
+                    stroke.start.0,
+                    900 - stroke.start.1,
+                    i0 + i + 1
+                )
+            })
             .fold(String::new(), |acc, e| acc + &e)
     )
 }
@@ -225,10 +239,13 @@ fn html_from_writing(w: Vec<CharWriting>) -> String {
     for c in w.into_iter() {
         let ns = match &c {
             CharWriting::Strokes(strokes) => strokes.len(),
-            CharWriting::Char(_c) => 1,
+            CharWriting::Char(_c) => 0,
         };
         cw.push(html_from_char_writing(c, i0));
         i0 += ns;
+        if ns == 0 {
+            i0 = 0;
+        }
     }
     format!(r#"<p class="tc">{}</p>"#, cw.join(""))
 }
