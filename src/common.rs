@@ -1,5 +1,7 @@
+use crate::anki::*;
 use enum_dispatch::enum_dispatch;
 use ordered_float::NotNan;
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
 fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
@@ -27,25 +29,25 @@ pub fn process_pinyin(s: &str) -> String {
     .unwrap_or(s)
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Definition {
     pub pinyin: Option<String>,
     pub english: Vec<String>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Priority {
     pub val: NotNan<f32>,
     pub max: NotNan<f32>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum CharWriting {
     Strokes(Vec<String>),
     Char(char),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WordEntry {
     pub id: String,
     pub pinyin: Vec<String>,
@@ -129,8 +131,23 @@ impl Entry for WordEntry {
     fn priority(&self) -> NotNan<f32> {
         self.total_priority()
     }
-    fn into_note(self, model: genanki_rs::Model) -> genanki_rs::Note {
-        todo!()
+    fn into_note(self, idx: usize) -> genanki_rs::Note {
+        genanki_rs::Note::new(
+            WORD_MODEL.clone(),
+            vec![
+                &format!("{}", idx),
+                &self.id,
+                &format!("{:?}", self.pinyin),
+                &format!("{:?}", self.definitions),
+                &format!("{:?}", self.writing),
+                &format!("{:?}", self.traditional),
+                &format!("{:?}", self.examples),
+                &format!("{:?}", self.hsk_lev),
+                &format!("{:?}", self.audio_file),
+                &format!("{:?}", "extra"),
+            ],
+        )
+        .unwrap()
     }
     fn id(&self) -> EntryId {
         EntryId::Word(self.id.clone())
@@ -186,7 +203,7 @@ pub fn is_good_cjk(c: char) -> bool {
         || (0x2E80..=0x2EFF).contains(&cp)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SyllableEntry {
     /// pinyin
     pub id: String,
@@ -196,7 +213,7 @@ impl Entry for SyllableEntry {
     fn priority(&self) -> NotNan<f32> {
         NotNan::new(10f32).unwrap()
     }
-    fn into_note(self, model: genanki_rs::Model) -> genanki_rs::Note {
+    fn into_note(self, idx: usize) -> genanki_rs::Note {
         todo!()
     }
     fn id(&self) -> EntryId {
@@ -219,7 +236,7 @@ impl Entry for SyllableEntry {
 use std::sync::LazyLock;
 pub static JIEBA: LazyLock<jieba_rs::Jieba> = LazyLock::new(jieba_rs::Jieba::new);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Triplet {
     pub zh: String,
     pub en: String,
@@ -234,7 +251,7 @@ impl Triplet {
             .collect()
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GrammarEntry {
     pub id: String,
     pub structure: Triplet,
@@ -250,7 +267,7 @@ impl Entry for GrammarEntry {
         let fp = 1f32 - self.hsk_sublev.unwrap_or(1f32);
         hp * 0.5 + hp * fp * 0.25
     }
-    fn into_note(self, model: genanki_rs::Model) -> genanki_rs::Note {
+    fn into_note(self, idx: usize) -> genanki_rs::Note {
         todo!()
     }
     fn id(&self) -> EntryId {
@@ -274,14 +291,14 @@ impl Entry for GrammarEntry {
 
 #[allow(clippy::enum_variant_names)]
 #[enum_dispatch(Entry)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CommonEntry {
     WordEntry,
     SyllableEntry,
     GrammarEntry,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EntryId {
     Word(String),
     Syllable(String),
@@ -291,7 +308,7 @@ pub enum EntryId {
 pub trait Entry {
     /// Higher priority means it should come earlier in the deck
     fn priority(&self) -> NotNan<f32>;
-    fn into_note(self, model: genanki_rs::Model) -> genanki_rs::Note;
+    fn into_note(self, idx: usize) -> genanki_rs::Note;
     fn id(&self) -> EntryId;
     fn dependencies(&self) -> Vec<EntryId>;
     fn merge(&mut self, o: CommonEntry);

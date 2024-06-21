@@ -3,6 +3,7 @@
 #![allow(unused)]
 #![feature(path_file_prefix)]
 mod anim_cjk;
+mod anki;
 mod audio;
 mod cedict;
 mod common;
@@ -12,44 +13,12 @@ mod hsk;
 mod lp_grammar;
 mod tatoeba;
 
+use anki::*;
 use common::*;
 use genanki_rs::*;
+use std::io::Write;
 
-const OPTIONS_JS: &str = include_str!("../anki-canvas/options.js");
-const FRONT_JS: &str = include_str!("../anki-canvas/front.js");
-const BACK_JS: &str = include_str!("../anki-canvas/back.js");
-
-fn main_model() -> Model {
-    const MODEL_ID: i64 = 7568361786070221454;
-
-    let template_writing = {
-        let front_inner = r#"<p>{{reading}}</p><div id="ac-front"></div>"#;
-        let back_inner = r#"<div id="ac-back"></div>{{writing}}{{utf8}}{{reading}}{{meaning}}"#;
-        let front = format!(
-            "<script>{}</script>{}<script>{}</script>",
-            OPTIONS_JS, front_inner, FRONT_JS
-        );
-        let back = format!(
-            "<script>{}</script>{}<script>{}</script>",
-            OPTIONS_JS, back_inner, BACK_JS
-        );
-        Template::new("zh_writing").qfmt(&front).afmt(&back)
-    };
-
-    Model::new(
-        MODEL_ID,
-        "hanziM",
-        vec![
-            Field::new("sort_field"),
-            Field::new("utf8"),
-            Field::new("meaning"),
-            Field::new("reading"),
-            Field::new("writing"),
-            Field::new("unique"),
-        ],
-        vec![template_writing],
-    )
-}
+const MAX_ENTRIES: usize = 256;
 
 use std::collections::{HashMap, HashSet};
 fn process_entries() -> Vec<CommonEntry> {
@@ -59,7 +28,7 @@ fn process_entries() -> Vec<CommonEntry> {
     let fr = freq::get_records();
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
-    let sa = audio::get_syllable_audios();
+    //let sa = audio::get_syllable_audios();
     let hs = hsk::get_hsks();
     let lg = lp_grammar::get_records();
 
@@ -70,7 +39,7 @@ fn process_entries() -> Vec<CommonEntry> {
         .chain(fr)
         .chain(f2)
         .chain(wa)
-        .chain(sa)
+        //.chain(sa)
         .chain(hs)
         .chain(lg)
     {
@@ -122,10 +91,12 @@ fn process_entries() -> Vec<CommonEntry> {
 
     entries.sort_by_cached_key(|e| e.priority());
 
+    entries = entries.into_iter().rev().take(MAX_ENTRIES).rev().collect();
+
     let mut ans = vec![];
     let mut done = HashSet::<EntryId>::new();
     let mut stack: Vec<Vec<EntryId>> = vec![entries.iter().map(|x| x.id()).collect()];
-    while !stack.is_empty() {
+    while !stack.is_empty() && ans.len() < MAX_ENTRIES {
         while stack.last().is_some_and(|x| x.is_empty()) {
             stack.pop();
         }
@@ -164,24 +135,27 @@ fn process_entries() -> Vec<CommonEntry> {
 }
 
 fn main() {
-    let entries = process_entries();
-    eprintln!("entries.len: {}", entries.len());
-    for entry in entries
+    let entries: Vec<CommonEntry> = if false {
+        let mut entries = process_entries();
+        let file = std::fs::File::create("out/cache.ron").unwrap();
+        ron::ser::to_writer_pretty(file, &entries, ron::ser::PrettyConfig::default()).unwrap();
+        return;
+        unreachable!();
+    } else {
+        let file = std::fs::File::open("out/cache.ron").unwrap();
+        let reader = std::io::BufReader::new(file);
+        ron::de::from_reader(reader).unwrap()
+    };
+
+    let notes = entries
         .into_iter()
-        .filter(|x| !matches!(x, CommonEntry::SyllableEntry(_)))
-        .skip(8000)
-        .take(600)
-    {
-        println!("{}", entry.compact_display());
-    }
-
-    return;
-
-    const DECK_ID: i64 = 9030804782668984910;
-    let main_model = main_model();
-    let test_note = Note::new(main_model, vec!["行","go","xíng","<img src='https://raw.githubusercontent.com/parsimonhi/animCJK/master/svgsZhHans/34892.svg'></img>","false"]).unwrap();
+        .enumerate()
+        .map(|(idx, x)| x.into_note(idx));
 
     let mut deck = Deck::new(DECK_ID, "zh", "zh");
-    deck.add_note(test_note);
-    deck.write_to_file("test.apkg").unwrap();
+    for note in notes {
+        deck.add_note(note);
+    }
+
+    deck.write_to_file("out/test.apkg").unwrap();
 }
