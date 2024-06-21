@@ -18,17 +18,28 @@ h1,h2,h3,h4,#ac-back,#ac-front,.tc {
 h2,h3,h4 {
     font-weight: 600;
 }
-rb {
+rt {
     font-size: 0.5em;
 }
 ol {
     list-style-type: none;
 }
-.cw,svg {
+.def {
+    margin-left: 0.5em;
+    margin-top:0.2em;
+    padding: 0.1em 0.5em;
+    border-style:solid;
+    border-width:thin;
+    border-radius: 5px;
+    display: inline-block;
+}
+.charvg {
     display: inline-block;
     width: 3em;
     height: 3em;
     font-size: 3em;
+    border: solid;
+    border-width: thin;
 }
 "#;
 
@@ -37,14 +48,17 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
     <h1>{{word}}</h1>
     <h2>{{pinyin}}</h2>
     <h4>{{traditional}}</h4>
+    <hr>
     <ol>{{definitions}}</ol>
+    <hr>
     <ul>{{examples}}</ul>
+    <hr>
     <p>HSK: {{hsk}}</p>
     <details>
         <summary>Extra</summary>
         {{extra}}
     </details>
-    {{#audio}}<p class=tc>{{audio}}</p>{{/audio}}
+    {{#audio}}<p class="tc">{{audio}}</p>{{/audio}}
     "#;
 
     const MODEL_ID: i64 = 7568361786070221454;
@@ -68,11 +82,11 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
         const FRONT_INNER: &str = r#"
         <div id="ac-front"></div>
         {{#audio}}
-            <p class="tc">{{audio}}</p>
-            <p class="tc">{{hint:pinyin}}</p>
+            <h3 class="tc">{{audio}}</h3>
+            <h3 class="tc">{{hint:pinyin}}</h3>
         {{/audio}}
         {{^audio}}
-            <p class="tc">{{pinyin}}</p>
+            <h3 class="tc">{{pinyin}}</h3>
         {{/audio}}
         {{hint:definitions}}
         "#;
@@ -187,7 +201,7 @@ fn anki_canvas_contrast(idx: usize) -> String {
 }
 fn svg_from_strokes(strokes: Vec<String>, i0: usize) -> String {
     format!(
-        r#"<svg viewbox="0 0 1024 1024"><g transform="scale(1, -1) translate(0, -900)">{}</g></svg>"#,
+        r#"<svg class="charvg" viewbox="0 0 1024 1024"><g transform="scale(1, -1) translate(0, -900)">{}</g></svg>"#,
         strokes
             .iter()
             .enumerate()
@@ -202,7 +216,7 @@ fn svg_from_strokes(strokes: Vec<String>, i0: usize) -> String {
 fn html_from_char_writing(w: CharWriting, i0: usize) -> String {
     match w {
         CharWriting::Strokes(strokes) => svg_from_strokes(strokes, i0),
-        CharWriting::Char(c) => format!(r#"<span class="cw">{}</span>"#, c),
+        CharWriting::Char(c) => format!(r#"<span class="charvg">{}</span>"#, c),
     }
 }
 fn html_from_writing(w: Vec<CharWriting>) -> String {
@@ -235,7 +249,10 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
                     format!(
                         "<li><b>{}</b>: {}</li>",
                         x.pinyin.unwrap_or_default(),
-                        x.english.join("; ")
+                        x.english
+                            .iter()
+                            .map(|x| format!(r#"<span class="def">{}</span>"#, x))
+                            .fold(String::new(), |acc, e| acc + &e)
                     )
                 })
                 .fold(String::new(), |acc, e| acc + &e),

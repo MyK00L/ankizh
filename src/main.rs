@@ -14,8 +14,10 @@ use anki::*;
 use common::*;
 use genanki_rs::*;
 use ordered_float::NotNan;
+use pinyin::ToPinyin;
 
-const MAX_ENTRIES: usize = 20000;
+//const MAX_ENTRIES: usize = 20000;
+const MAX_ENTRIES: usize = 256;
 
 use std::collections::{HashMap, HashSet};
 fn process_entries() -> Vec<CommonEntry> {
@@ -25,7 +27,7 @@ fn process_entries() -> Vec<CommonEntry> {
     let fr = freq::get_records();
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
-    let sa = audio::get_syllable_audios(); //.take(2);
+    let sa = audio::get_syllable_audios().take(2);
     let hs = hsk::get_hsks();
     let lg = lp_grammar::get_records();
 
@@ -84,8 +86,19 @@ fn process_entries() -> Vec<CommonEntry> {
         }
     }
     // add definitions to some single-character entries from unicode names
+    // and pinyin to words missing them
     for (_, entry) in hm.iter_mut() {
         if let CommonEntry::WordEntry(w) = entry {
+            if w.pinyin.is_empty() {
+                let py =
+                    w.id.as_str()
+                        .to_pinyin()
+                        .flatten()
+                        .map(|x| x.with_tone().to_string())
+                        .fold(String::new(), |acc, e| acc + &e);
+                let py = process_pinyin(&py);
+                w.pinyin.push(py);
+            }
             if w.id.chars().count() == 1 && w.definitions.is_empty() {
                 let c = w.id.chars().next().unwrap();
                 let name = unicode_names2::name(c).unwrap().to_string();
@@ -146,30 +159,32 @@ fn process_entries() -> Vec<CommonEntry> {
     ans
 }
 
-fn main() {
-    /*
-    let entries: Vec<CommonEntry> = if false {
-        let mut entries = process_entries();
-        let file = std::fs::File::create("out/cache.ron").unwrap();
-        let writer = std::io::BufWriter::new(file);
-        ron::ser::to_writer_pretty(writer, &entries, ron::ser::PrettyConfig::default()).unwrap();
-        return;
-        unreachable!();
-    } else {
-        let file = std::fs::File::open("out/cache.ron").unwrap();
-        let reader = std::io::BufReader::new(file);
-        ron::de::from_reader(reader).unwrap()
-    };
-    */
-
+/// Prettifies output, used for debugging purposes
+#[allow(unused)]
+fn cache_entries() {
     let entries = process_entries();
-
-    /*
+    let file = std::fs::File::create("out/cache.ron").unwrap();
+    let writer = std::io::BufWriter::new(file);
+    ron::ser::to_writer_pretty(writer, &entries, ron::ser::PrettyConfig::default()).unwrap();
+}
+#[allow(unused)]
+fn get_cached_entries() -> Vec<CommonEntry> {
+    let file = std::fs::File::open("out/cache.ron").unwrap();
+    let reader = std::io::BufReader::new(file);
+    ron::de::from_reader(reader).unwrap()
+}
+#[allow(unused)]
+fn debug_entries(entries: Vec<CommonEntry>) {
     for entry in entries {
         println!("{}", entry.compact_display());
     }
-    return;
-    */
+}
+
+fn main() {
+    //cache_entries();return;
+    let entries = get_cached_entries();
+    //debug_entries(entries);return;
+    //let entries = process_entries();
 
     let media: Vec<String> = entries.iter().flat_map(|x| x.media()).collect();
 
