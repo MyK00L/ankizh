@@ -273,7 +273,7 @@ impl Entry for GrammarEntry {
         a.extend(self.example.dependencies());
         a
     }
-    fn merge(&mut self, o: CommonEntry) {
+    fn merge(&mut self, _o: CommonEntry) {
         unimplemented!()
     }
     fn compact_display(&self) -> String {

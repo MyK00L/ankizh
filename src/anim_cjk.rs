@@ -5,7 +5,8 @@ use serde::Deserialize;
 pub struct GraphicsEntry {
     pub character: char,
     pub strokes: Vec<String>,
-    medians: Vec<Vec<(f32, f32)>>,
+    #[allow(unused)]
+    medians: Vec<Vec<(f32, f32)>>, // TODO: use this for automatic checking if character was drawn correctly?
 }
 impl From<GraphicsEntry> for WordEntry {
     fn from(o: GraphicsEntry) -> Self {
@@ -27,6 +28,7 @@ fn is_radical(c: char) -> bool {
 pub struct DictionaryEntry {
     pub character: char,
     pub decomposition: String,
+    #[allow(unused)]
     pub radical: String,
 }
 impl From<DictionaryEntry> for WordEntry {

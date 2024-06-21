@@ -9,13 +9,16 @@ struct GrammarRecord {
     id: u32,
     code: String,
     structure: String,
+    #[allow(unused)]
     pattern: String,
     pinyin: String,
     english: String,
+    #[allow(unused)]
     review: String,
     example: String,
     #[serde(rename = "exampleTranslation")]
     example_translation: String,
+    #[allow(unused)]
     url: String,
     _hsk_lev: Option<u8>,
     _hsk_sublev: Option<f32>,

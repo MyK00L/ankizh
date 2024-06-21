@@ -8,6 +8,7 @@ use serde::Deserialize;
 struct TatoebaRecord {
     zh_id: u64,
     zh: String,
+    #[allow(unused)]
     en_id: u64,
     en: String,
 }

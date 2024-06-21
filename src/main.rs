@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unreachable_code)]
-#![allow(unused)]
 #![feature(path_file_prefix)]
 mod anim_cjk;
 mod anki;
@@ -16,9 +13,10 @@ mod tatoeba;
 use anki::*;
 use common::*;
 use genanki_rs::*;
+use ordered_float::NotNan;
 use std::io::Write;
 
-const MAX_ENTRIES: usize = 256;
+const MAX_ENTRIES: usize = 20000;
 
 use std::collections::{HashMap, HashSet};
 fn process_entries() -> Vec<CommonEntry> {
@@ -28,8 +26,7 @@ fn process_entries() -> Vec<CommonEntry> {
     let fr = freq::get_records();
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
-    // TODO: remove take
-    let sa = audio::get_syllable_audios().take(2);
+    let sa = audio::get_syllable_audios(); //.take(2);
     let hs = hsk::get_hsks();
     let lg = lp_grammar::get_records();
 
@@ -104,15 +101,17 @@ fn process_entries() -> Vec<CommonEntry> {
     }
     hm.retain(|_k, v| !v.to_delete());
 
-    let mut entries: Vec<CommonEntry> = hm.values().cloned().collect();
-
-    entries.sort_by_cached_key(|e| e.priority());
-
-    entries = entries.into_iter().rev().take(MAX_ENTRIES).rev().collect();
+    let mut ordered: Vec<(NotNan<f32>, EntryId)> = hm
+        .iter()
+        .map(|(k, v)| (v.priority(), k.clone()))
+        .filter(|(p, _k)| *p > NotNan::new(0f32).unwrap())
+        .collect();
+    ordered.sort_by_key(|e| e.0);
+    ordered = ordered.into_iter().rev().take(MAX_ENTRIES).rev().collect();
 
     let mut ans = vec![];
     let mut done = HashSet::<EntryId>::new();
-    let mut stack: Vec<Vec<EntryId>> = vec![entries.iter().map(|x| x.id()).collect()];
+    let mut stack: Vec<Vec<EntryId>> = vec![ordered.into_iter().map(|(_p, k)| k).collect()];
     while !stack.is_empty() && ans.len() < MAX_ENTRIES {
         while stack.last().is_some_and(|x| x.is_empty()) {
             stack.pop();
@@ -144,14 +143,12 @@ fn process_entries() -> Vec<CommonEntry> {
         }
     }
 
-    assert_eq!(ans.len(), entries.len());
-
     tatoeba::add_examples(&mut ans);
-
     ans
 }
 
 fn main() {
+    /*
     let entries: Vec<CommonEntry> = if false {
         let mut entries = process_entries();
         let file = std::fs::File::create("out/cache.ron").unwrap();
@@ -164,6 +161,16 @@ fn main() {
         let reader = std::io::BufReader::new(file);
         ron::de::from_reader(reader).unwrap()
     };
+    */
+
+    let entries = process_entries();
+
+    /*
+    for entry in entries {
+        println!("{}", entry.compact_display());
+    }
+    return;
+    */
 
     let media: Vec<String> = entries.iter().flat_map(|x| x.media()).collect();
 
