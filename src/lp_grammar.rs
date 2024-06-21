@@ -1,5 +1,4 @@
 use crate::common::*;
-use ordered_float::NotNan;
 use pinyin::ToPinyin;
 use serde::Deserialize;
 use std::str::FromStr;

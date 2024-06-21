@@ -1,8 +1,6 @@
-use crate::anki::*;
 use enum_dispatch::enum_dispatch;
 use ordered_float::NotNan;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 
 pub fn is_good_cjk(c: char) -> bool {
     let cp: u32 = c.into();

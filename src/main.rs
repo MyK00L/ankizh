@@ -14,7 +14,6 @@ use anki::*;
 use common::*;
 use genanki_rs::*;
 use ordered_float::NotNan;
-use std::io::Write;
 
 const MAX_ENTRIES: usize = 20000;
 
