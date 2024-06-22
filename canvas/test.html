@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.ac-front-canvas,.ac-back-canvas {
+	border: solid;
+	border-width: thin;
+}
+.ac-front-canvas {
+	height: 200px;
+	width: 200px;
+}
+.ac-back-canvas {
+	height: 100px;
+	width: 100px;
+}
+.ac-front-controls {
+	display: inline-grid;
+	grid-row: 1;
+}
+#ac-front {
+	display: flex;
+}
+.ac-front-controls button {
+	grid-column:1;
+	height: 2em;
+	width: 2em;
+	font-size: 1.5em;
+}
+.ac-front-canvas-span {
+	display: inline-grid;
+	justify-items: center;
+}
+.ac-front-canvas-span canvas {
+	grid-column: 1;
+	grid-row: 1;
+}
+.ac-front-canvas-span button {
+	grid-column: 1;
+	grid-row: 2;
+	height: 2em;
+	width: 2em;
+	font-size: 1.5em;
+}
+</style>
+</head>
+<body>
+<div id="ac-front" class="anki-canvas"></div>
+<hr>
+<div id="ac-back" class="anki-canvas"></div>
+<script src="canvas.js"></script>
+</body>
+</html>
