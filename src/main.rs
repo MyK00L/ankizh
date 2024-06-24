@@ -17,8 +17,8 @@ use common::*;
 use genanki_rs::*;
 use ordered_float::NotNan;
 
-//const MAX_ENTRIES: usize = 20000;
-const MAX_ENTRIES: usize = 256;
+const MAX_ENTRIES: usize = 20000;
+const MIN_PRIORITY: f32 = 0.19f32;
 
 use std::collections::{HashMap, HashSet};
 fn process_entries() -> Vec<CommonEntry> {
@@ -33,14 +33,14 @@ fn process_entries() -> Vec<CommonEntry> {
     let lg = lp_grammar::get_records();
 
     let mut hm = HashMap::<EntryId, CommonEntry>::new();
-    for e in ag
+    for e in hs
+        .chain(ag)
         .chain(ad)
         .chain(cd)
         .chain(fr)
         .chain(f2)
         .chain(wa)
         .chain(sa)
-        .chain(hs)
         .chain(lg)
     {
         if let Some(hme) = hm.get_mut(&e.id()) {
@@ -110,7 +110,7 @@ fn process_entries() -> Vec<CommonEntry> {
     let mut ordered: Vec<(NotNan<f32>, EntryId)> = hm
         .iter()
         .map(|(k, v)| (v.priority(), k.clone()))
-        .filter(|(p, _k)| *p > NotNan::new(0f32).unwrap())
+        .filter(|(p, _k)| *p >= NotNan::new(MIN_PRIORITY).unwrap())
         .collect();
     ordered.sort_by_key(|e| e.0);
     ordered = ordered.into_iter().rev().take(MAX_ENTRIES).rev().collect();
@@ -157,15 +157,15 @@ fn process_entries() -> Vec<CommonEntry> {
 #[allow(unused)]
 fn cache_entries() {
     let entries = process_entries();
-    let file = std::fs::File::create("out/cache.ron").unwrap();
+    let file = std::fs::File::create("out/cache.bin").unwrap();
     let writer = std::io::BufWriter::new(file);
-    ron::ser::to_writer_pretty(writer, &entries, ron::ser::PrettyConfig::default()).unwrap();
+    bincode::serialize_into(writer, &entries).unwrap();
 }
 #[allow(unused)]
 fn get_cached_entries() -> Vec<CommonEntry> {
-    let file = std::fs::File::open("out/cache.ron").unwrap();
+    let file = std::fs::File::open("out/cache.bin").unwrap();
     let reader = std::io::BufReader::new(file);
-    ron::de::from_reader(reader).unwrap()
+    bincode::deserialize_from(reader).unwrap()
 }
 #[allow(unused)]
 fn debug_entries(entries: Vec<CommonEntry>) {
@@ -178,12 +178,11 @@ fn debug_entries(entries: Vec<CommonEntry>) {
 }
 
 fn main() {
-    //cache_entries();return;
-    //let entries = get_cached_entries();
-    let entries = process_entries();
+    cache_entries();return;
+    let entries = get_cached_entries();
+    //let entries = process_entries();
     debug_entries(entries);
     return;
-    //let entries = process_entries();
 
     let media: Vec<String> = entries.iter().flat_map(|x| x.media()).collect();
 

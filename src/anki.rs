@@ -7,6 +7,7 @@ pub const DECK_ID: i64 = 9030804782668984910;
 
 const PRE_HTML_COMMON: &str = r#"<span lang="zh-Hans">"#;
 const POST_HTML_COMMON: &str = r#"<p style="display:none;">{{sort_field}}</p></span>"#;
+const POST_HTML_COMMON_NO_SORTFIELD: &str = r#"</span>"#;
 
 const CSS_COMMON: &str = r#"
 body {
@@ -144,10 +145,19 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
         const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
         Template::new("zh_word_reading").qfmt(FRONT).afmt(BACK)
     };
+    let template_recalling = {
+        const FRONT_INNER: &str = r#"
+        <h2>How to say <b style="color:red;">{{english_single}}</b> in chinese?</h2>
+        "#;
+        const BACK_INNER: &str = BACK_COMMON;
+        const FRONT: &str = concatcp!(PRE_HTML_COMMON, FRONT_INNER, POST_HTML_COMMON_NO_SORTFIELD,);
+        const BACK: &str = concatcp!(PRE_HTML_COMMON, BACK_INNER, POST_HTML_COMMON);
+        Template::new("zh_word_recalling").qfmt(FRONT).afmt(BACK)
+    };
 
     Model::new_with_options(
         MODEL_ID,
-        "hanziM",
+        "HanziWord",
         vec![
             Field::new("sort_field"),
             Field::new("word"),
@@ -161,7 +171,12 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
             Field::new("audio"),
             Field::new("extra"),
         ],
-        vec![template_writing, template_meaning, template_reading],
+        vec![
+            template_meaning,
+            template_reading,
+            template_writing,
+            template_recalling,
+        ],
         Some(CSS_COMMON),
         None,
         None,
@@ -266,7 +281,10 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
             &we.pinyin
                 .iter()
                 .map(|x| x.to_string())
-                .fold(String::new(), |acc, e| acc + ", " + &e),
+                .fold(String::new(), |acc, e| {
+                    let sep = if !acc.is_empty() { ", " } else { "" };
+                    acc + sep + &e
+                }),
             // definitions
             &we.definitions
                 .into_iter()
@@ -324,7 +342,7 @@ pub static SYLLABLE_MODEL: LazyLock<Model> = LazyLock::new(|| {
     };
     Model::new_with_options(
         MODEL_ID,
-        "hanziM",
+        "HanziSyllable",
         vec![
             Field::new("sort_field"),
             Field::new("pinyin"),
@@ -374,7 +392,7 @@ pub static GRAMMAR_MODEL: LazyLock<Model> = LazyLock::new(|| {
     };
     Model::new_with_options(
         MODEL_ID,
-        "hanziM",
+        "HanziGrammar",
         vec![
             Field::new("sort_field"),
             Field::new("szh"),

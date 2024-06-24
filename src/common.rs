@@ -71,22 +71,39 @@ impl WordEntry {
         }
     }
     pub fn first_definition(&self) -> Option<String> {
-        let py = CapPinyin::from_hanzi(&self.id);
-        if self.id == "日" {
-            eprintln!("{} py: {}", self.id, py);
-            eprintln!("{:?}", self.definitions);
-        }
-        self.definitions.iter().find_map(|x| {
-            if x.pinyin.as_ref() == Some(&py) {
-                x.english[0]
-                    .as_str()
-                    .split(';')
-                    .next()
-                    .map(|x| x.to_owned())
+        /*self.definitions.iter().find_map(|x| {
+            if x.pinyin.as_ref().is_some_and(|py| !py.is_capitalized()) {
+                x.english[0].as_str().split(';').next().map(|x| x.to_owned())
             } else {
                 None
             }
         })
+        */
+        let py: CapPinyin = self.pinyin[0].clone().into();
+        self.definitions
+            .iter()
+            .find_map(|x| {
+                if x.pinyin.as_ref() == Some(&py) {
+                    x.english[0]
+                        .as_str()
+                        .split(';')
+                        .next()
+                        .map(|x| x.to_owned())
+                } else {
+                    None
+                }
+            })
+            .or_else(|| {
+                if self.definitions.is_empty() {
+                    None
+                } else {
+                    self.definitions[0].english[0]
+                        .as_str()
+                        .split(';')
+                        .next()
+                        .map(|x| x.to_owned())
+                }
+            })
     }
     pub fn total_priority(&self) -> NotNan<f32> {
         let freq: NotNan<f32> = self.freq.iter().sum();

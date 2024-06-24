@@ -57,14 +57,26 @@ pub struct CapPinyin {
     cap: bool,
 }
 impl CapPinyin {
+    /*
     pub fn from_hanzi<S: AsRef<str>>(s: S) -> Self {
-        let spy = s
+        /*let spy = s
             .as_ref()
             .to_pinyin()
             .flatten()
             .map(|x| x.with_tone().to_string())
             .fold(String::new(), |acc, e| acc + &e);
+        */
+        let spy = PINYIN_TRANSLATOR.translate(s.as_ref().to_owned());
         Self::from(spy)
+    }
+    */
+    pub fn is_capitalized(&self) -> bool {
+        self.cap
+    }
+}
+impl From<Pinyin> for CapPinyin {
+    fn from(p: Pinyin) -> Self {
+        Self{py: p.0, cap: false}
     }
 }
 impl<S: AsRef<str>> From<S> for CapPinyin {
