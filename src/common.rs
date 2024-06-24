@@ -129,7 +129,11 @@ impl WordEntry {
 
         self.traditional = self.traditional.take().or(o.traditional);
         self.audio_file = self.audio_file.take().or(o.audio_file);
-        self.hsk_lev = self.hsk_lev.take().or(o.hsk_lev);
+        if let (Some(hska), Some(hskb)) = (self.hsk_lev, o.hsk_lev) {
+            self.hsk_lev = Some(hska.min(hskb));
+        } else {
+            self.hsk_lev = self.hsk_lev.take().or(o.hsk_lev);
+        }
     }
     fn is_missing_some_writing(&self) -> bool {
         self.writing.len() != self.id.chars().count()
