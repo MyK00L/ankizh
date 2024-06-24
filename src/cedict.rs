@@ -1,5 +1,33 @@
 use crate::common::*;
+use crate::pinyin_type::*;
+use regex::Regex;
 use std::io::BufRead;
+use std::sync::LazyLock;
+
+pub static RERE: LazyLock<[Regex; 7]> = LazyLock::new(|| {
+    [
+        Regex::new(r#"old variant of (?:\S)*\[.*?\](?:\(.*\))?"#).unwrap(),
+        Regex::new(r#"erhua variant of (?:\S)*\[.*?\](?:\(.*\))?"#).unwrap(),
+        Regex::new(r#"variant of (?:\S)*\[.*?\](?:\(.*\))?"#).unwrap(),
+        Regex::new(r#"see (?:\S)*\[.*?\](?:\(.*\))?"#).unwrap(),
+        Regex::new(r#"see also (?:\S)*\[.*?\](?:\(.*\))?"#).unwrap(),
+        Regex::new(r#",? ?occurring in.*etc"#).unwrap(),
+        Regex::new(r#"\[.*?\]"#).unwrap(),
+    ]
+});
+
+fn simplify_def(ss: &str, blacklist: &[char]) -> Option<String> {
+    let mut ans: String = ss.trim().to_owned();
+    for re in RERE.iter() {
+        ans = re.replace_all(&ans, "").trim().to_owned();
+    }
+    ans = ans.as_str().replace(blacklist, "〇");
+    if ans.as_str().trim().is_empty() {
+        None
+    } else {
+        Some(ans)
+    }
+}
 
 #[derive(Debug)]
 pub struct CedictEntry {
@@ -21,12 +49,14 @@ impl From<&str> for CedictEntry {
         let mut r = &s[2..];
         while let Some((ds, x)) = r.split_once('/') {
             r = x;
-            d.push(ds.to_owned());
+            if let Some(sd) = simplify_def(ds, &tr.chars().chain(zh.chars()).collect::<Vec<_>>()) {
+                d.push(sd);
+            }
         }
         Self {
             simplified: zh.into(),
             traditional: tr.into(),
-            pinyin: process_pinyin(py),
+            pinyin: py.to_owned(),
             definitions: d,
         }
     }
@@ -35,11 +65,15 @@ impl From<CedictEntry> for WordEntry {
     fn from(o: CedictEntry) -> Self {
         let mut w = WordEntry::from_id(o.simplified);
         w.traditional = Some(o.traditional);
-        w.pinyin = vec![o.pinyin.clone()];
-        w.definitions = vec![Definition {
-            pinyin: Some(o.pinyin),
-            english: o.definitions,
-        }];
+        w.pinyin = vec![Pinyin::from(&o.pinyin)];
+        w.definitions = if o.definitions.is_empty() {
+            vec![]
+        } else {
+            vec![Definition {
+                pinyin: Some(CapPinyin::from(o.pinyin)),
+                english: o.definitions,
+            }]
+        };
         w
     }
 }

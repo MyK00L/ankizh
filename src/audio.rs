@@ -16,7 +16,7 @@ impl From<AudioPath> for WordEntry {
 impl From<AudioPath> for SyllableEntry {
     fn from(a: AudioPath) -> Self {
         Self {
-            id: process_pinyin(&a.id),
+            id: a.id,
             audio_file: a.path,
         }
     }

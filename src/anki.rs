@@ -151,6 +151,7 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
         vec![
             Field::new("sort_field"),
             Field::new("word"),
+            Field::new("english_single"),
             Field::new("pinyin"),
             Field::new("definitions"),
             Field::new("writing"),
@@ -257,8 +258,15 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
             &format!("{:08}", idx),
             // word
             &we.id,
+            // english_single
+            &we.hsk_lev
+                .and_then(|hsk| if hsk < 7 { we.first_definition() } else { None })
+                .unwrap_or_default(),
             // pinyin
-            &we.pinyin.join(", "),
+            &we.pinyin
+                .iter()
+                .map(|x| x.to_string())
+                .fold(String::new(), |acc, e| acc + ", " + &e),
             // definitions
             &we.definitions
                 .into_iter()
@@ -396,13 +404,13 @@ pub fn grammar_entry_to_note(ge: GrammarEntry, idx: usize) -> Note {
             // sen
             &ge.structure.en,
             // spy
-            &ge.structure.py,
+            &ge.structure.py.to_string(),
             // ezh
             &ge.example.zh,
             // een
             &ge.example.en,
             // epy
-            &ge.example.py,
+            &ge.example.py.to_string(),
             // hsk
             &ge.hsk_lev
                 .map(|x| x.to_string())

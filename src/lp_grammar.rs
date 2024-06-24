@@ -1,5 +1,5 @@
 use crate::common::*;
-use pinyin::ToPinyin;
+use crate::pinyin_type::*;
 use serde::Deserialize;
 use std::str::FromStr;
 
@@ -24,19 +24,12 @@ struct GrammarRecord {
 }
 impl From<GrammarRecord> for GrammarEntry {
     fn from(gr: GrammarRecord) -> Self {
-        let epy: String = gr
-            .example
-            .as_str()
-            .to_pinyin()
-            .flatten()
-            .map(|x| x.with_tone().to_string())
-            .fold(String::new(), |acc, e| acc + &e);
-        let epy = process_pinyin(&epy);
+        let epy = Pinyin::from_hanzi(&gr.example);
         Self {
             id: gr.id.to_string(),
             structure: Triplet {
                 zh: gr.structure,
-                py: gr.pinyin,
+                py: gr.pinyin.into(),
                 en: gr.english,
             },
             example: Triplet {

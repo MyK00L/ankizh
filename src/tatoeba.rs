@@ -1,7 +1,7 @@
 use crate::common::*;
+use crate::pinyin_type::*;
 use itertools::Itertools;
 use ordered_float::NotNan;
-use pinyin::ToPinyin;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -21,13 +21,7 @@ struct Example {
 }
 impl From<Example> for Triplet {
     fn from(e: Example) -> Self {
-        let epy: String =
-            e.zh.as_str()
-                .to_pinyin()
-                .flatten()
-                .map(|x| x.with_tone().to_string())
-                .fold(String::new(), |acc, e| acc + &e);
-        let epy = process_pinyin(&epy);
+        let epy = Pinyin::from_hanzi(&e.zh);
         Self {
             zh: e.zh,
             en: e.en,

@@ -8,13 +8,14 @@ mod freq;
 mod freq2;
 mod hsk;
 mod lp_grammar;
+mod pinyin_type;
 mod tatoeba;
 
+use crate::pinyin_type::*;
 use anki::*;
 use common::*;
 use genanki_rs::*;
 use ordered_float::NotNan;
-use pinyin::ToPinyin;
 
 //const MAX_ENTRIES: usize = 20000;
 const MAX_ENTRIES: usize = 256;
@@ -90,14 +91,7 @@ fn process_entries() -> Vec<CommonEntry> {
     for (_, entry) in hm.iter_mut() {
         if let CommonEntry::WordEntry(w) = entry {
             if w.pinyin.is_empty() {
-                let py =
-                    w.id.as_str()
-                        .to_pinyin()
-                        .flatten()
-                        .map(|x| x.with_tone().to_string())
-                        .fold(String::new(), |acc, e| acc + &e);
-                let py = process_pinyin(&py);
-                w.pinyin.push(py);
+                w.pinyin.push(Pinyin::from_hanzi(&w.id));
             }
             if w.id.chars().count() == 1 && w.definitions.is_empty() {
                 let c = w.id.chars().next().unwrap();
@@ -177,13 +171,18 @@ fn get_cached_entries() -> Vec<CommonEntry> {
 fn debug_entries(entries: Vec<CommonEntry>) {
     for entry in entries {
         println!("{}", entry.compact_display());
+        if let CommonEntry::WordEntry(we) = entry {
+            println!("^^ {}", we.first_definition().unwrap_or_default());
+        }
     }
 }
 
 fn main() {
     //cache_entries();return;
-    let entries = get_cached_entries();
-    //debug_entries(entries);return;
+    //let entries = get_cached_entries();
+    let entries = process_entries();
+    debug_entries(entries);
+    return;
     //let entries = process_entries();
 
     let media: Vec<String> = entries.iter().flat_map(|x| x.media()).collect();

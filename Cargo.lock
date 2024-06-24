@@ -53,6 +53,7 @@ dependencies = [
  "pinyin-parser",
  "prettify_pinyin",
  "ptrie",
+ "regex",
  "ron",
  "serde",
  "serde_json",

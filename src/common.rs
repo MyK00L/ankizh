@@ -1,3 +1,4 @@
+use crate::pinyin_type::{CapPinyin, Pinyin};
 use enum_dispatch::enum_dispatch;
 use ordered_float::NotNan;
 use serde::{Deserialize, Serialize};
@@ -17,34 +18,10 @@ pub fn is_good_cjk(c: char) -> bool {
         || (0x2F800..=0x2FA1F).contains(&cp)
         || (0x2E80..=0x2EFF).contains(&cp)
 }
-fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
-    f: F,
-) -> std::thread::Result<R> {
-    let prev_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(|_| {}));
-    let result = std::panic::catch_unwind(f);
-    std::panic::set_hook(prev_hook);
-    result
-}
-pub fn process_pinyin(s: &str) -> String {
-    let s = prettify_pinyin::prettify(s);
-    catch_unwind_silent(|| {
-        let parser = pinyin_parser::PinyinParser::new()
-            .preserve_spaces(false)
-            .preserve_punctuations(true)
-            .with_strictness(pinyin_parser::Strictness::Loose)
-            .preserve_miscellaneous(true);
-        parser
-            .parse(&s)
-            .reduce(|acc, s| acc + &s)
-            .unwrap_or_default()
-    })
-    .unwrap_or(s)
-}
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Definition {
-    pub pinyin: Option<String>,
+    pub pinyin: Option<CapPinyin>,
     pub english: Vec<String>,
 }
 
@@ -68,7 +45,7 @@ pub enum CharWriting {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WordEntry {
     pub id: String,
-    pub pinyin: Vec<String>,
+    pub pinyin: Vec<Pinyin>,
     pub definitions: Vec<Definition>,
     pub freq: Vec<NotNan<f32>>,
     pub hsk_lev: Option<u8>,
@@ -93,7 +70,24 @@ impl WordEntry {
             examples: vec![],
         }
     }
-
+    pub fn first_definition(&self) -> Option<String> {
+        let py = CapPinyin::from_hanzi(&self.id);
+        if self.id == "日" {
+            eprintln!("{} py: {}", self.id, py);
+            eprintln!("{:?}", self.definitions);
+        }
+        self.definitions.iter().find_map(|x| {
+            if x.pinyin.as_ref() == Some(&py) {
+                x.english[0]
+                    .as_str()
+                    .split(';')
+                    .next()
+                    .map(|x| x.to_owned())
+            } else {
+                None
+            }
+        })
+    }
     pub fn total_priority(&self) -> NotNan<f32> {
         let freq: NotNan<f32> = self.freq.iter().sum();
         let hsk_lev = self.hsk_lev.unwrap_or(10);
@@ -108,7 +102,6 @@ impl WordEntry {
     fn merge_inner(&mut self, mut o: Self) {
         assert_eq!(self.id, o.id);
         for py in o.pinyin {
-            let py = process_pinyin(&py);
             if !self.pinyin.contains(&py) {
                 self.pinyin.push(py);
             }
@@ -242,7 +235,7 @@ pub static JIEBA: LazyLock<jieba_rs::Jieba> = LazyLock::new(jieba_rs::Jieba::new
 pub struct Triplet {
     pub zh: String,
     pub en: String,
-    pub py: String,
+    pub py: Pinyin,
 }
 impl Triplet {
     fn dependencies(&self) -> Vec<EntryId> {
