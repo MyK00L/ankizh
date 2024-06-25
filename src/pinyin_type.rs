@@ -12,17 +12,29 @@ fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
     result
 }
 fn process_pinyin(s: &str) -> String {
-    let s = prettify_pinyin::prettify(s);
+    let s = {
+        let mut ans = String::new();
+        let mut lastnum = false;
+        for c in s.chars() {
+            if c.is_alphabetic() && lastnum {
+                ans.push(' ');
+            }
+            ans.push(c);
+            lastnum = c.is_numeric();
+        }
+        ans
+    };
+    let s = prettify_pinyin::prettify(&s);
     catch_unwind_silent(|| {
         let parser = pinyin_parser::PinyinParser::new()
             .preserve_spaces(false)
             .preserve_punctuations(true)
             .with_strictness(pinyin_parser::Strictness::Loose)
             .preserve_miscellaneous(true);
-        parser
-            .parse(&s)
-            .reduce(|acc, s| acc + " " + &s)
-            .unwrap_or_default()
+        parser.parse(&s).fold(String::new(), |acc, s| {
+            let sep = if acc.is_empty() { "" } else { " " };
+            acc + sep + s.trim()
+        })
     })
     .unwrap_or(s)
 }
@@ -30,6 +42,7 @@ fn process_pinyin(s: &str) -> String {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct Pinyin(String);
 impl Pinyin {
+    /// Use sparingly, it's not very accurate
     pub fn from_hanzi<S: AsRef<str>>(s: S) -> Self {
         let spy = s
             .as_ref()
@@ -57,19 +70,6 @@ pub struct CapPinyin {
     cap: bool,
 }
 impl CapPinyin {
-    /*
-    pub fn from_hanzi<S: AsRef<str>>(s: S) -> Self {
-        /*let spy = s
-            .as_ref()
-            .to_pinyin()
-            .flatten()
-            .map(|x| x.with_tone().to_string())
-            .fold(String::new(), |acc, e| acc + &e);
-        */
-        let spy = PINYIN_TRANSLATOR.translate(s.as_ref().to_owned());
-        Self::from(spy)
-    }
-    */
     pub fn is_capitalized(&self) -> bool {
         self.cap
     }
@@ -107,5 +107,21 @@ impl fmt::Display for CapPinyin {
         } else {
             write!(f, "{}", self.py)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn test_pyfrom(a: &str, b: &str) {
+        assert_eq!(Pinyin::from(&a).to_string(), b.to_string());
+    }
+    #[test]
+    fn py() {
+        test_pyfrom("wo3bu2zhi1dao english", "wǒ bú zhī dao english");
+        test_pyfrom("wo3bu2zhi1dao5 english", "wǒ bú zhī dao english");
+        test_pyfrom("wo3 bu2 zhi1 dao english", "wǒ bú zhī dao english");
+        test_pyfrom("wǒ bú zhī dao english", "wǒ bú zhī dao english");
+        test_pyfrom("wǒbúzhīdao english", "wǒ bú zhī dao english");
     }
 }

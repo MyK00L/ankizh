@@ -16,7 +16,7 @@ impl From<AudioPath> for WordEntry {
 impl From<AudioPath> for SyllableEntry {
     fn from(a: AudioPath) -> Self {
         Self {
-            id: a.id,
+            id: a.id.into(),
             audio_file: a.path,
         }
     }

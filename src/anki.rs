@@ -20,9 +20,6 @@ h1,h2,h3,h4,#ac-back,#ac-front,.tc {
 h2,h3,h4 {
     font-weight: 600;
 }
-rt {
-    font-size: 0.5em;
-}
 ol {
     list-style-type: none;
 }
@@ -372,7 +369,7 @@ pub fn syllable_entry_to_note(se: SyllableEntry, idx: usize) -> Note {
             // sort_field
             &format!("{:08}", idx),
             // pinyin
-            &encode_safe(&se.id),
+            &encode_safe(&se.id.to_string()),
             &format!(
                 "[sound:{}]",
                 se.audio_file.file_name().unwrap().to_str().unwrap()

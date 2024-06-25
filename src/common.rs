@@ -215,7 +215,7 @@ impl Entry for WordEntry {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SyllableEntry {
     /// pinyin
-    pub id: String,
+    pub id: Pinyin,
     pub audio_file: std::path::PathBuf,
 }
 impl Entry for SyllableEntry {
@@ -226,7 +226,7 @@ impl Entry for SyllableEntry {
         crate::anki::syllable_entry_to_note(self, idx)
     }
     fn id(&self) -> EntryId {
-        EntryId::Syllable(self.id.clone())
+        EntryId::Syllable(self.id.to_string())
     }
     fn dependencies(&self) -> Vec<EntryId> {
         vec![]
