@@ -28,7 +28,7 @@ fn process_entries() -> Vec<CommonEntry> {
     let fr = freq::get_records();
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
-    let sa = audio::get_syllable_audios().take(2);
+    let sa = audio::get_syllable_audios();
     let hs = hsk::get_hsks();
     let lg = lp_grammar::get_records();
 
@@ -171,18 +171,14 @@ fn get_cached_entries() -> Vec<CommonEntry> {
 fn debug_entries(entries: Vec<CommonEntry>) {
     for entry in entries {
         println!("{}", entry.compact_display());
-        if let CommonEntry::WordEntry(we) = entry {
-            println!("^^ {}", we.first_definition().unwrap_or_default());
-        }
     }
 }
 
 fn main() {
-    cache_entries();return;
+    //cache_entries();return;
     let entries = get_cached_entries();
     //let entries = process_entries();
-    debug_entries(entries);
-    return;
+    //debug_entries(entries);return;
 
     let media: Vec<String> = entries.iter().flat_map(|x| x.media()).collect();
 

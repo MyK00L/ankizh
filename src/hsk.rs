@@ -1,6 +1,6 @@
 use crate::common::*;
-use std::fs::File;
 use serde::Deserialize;
+use std::fs::File;
 
 #[derive(Clone, Deserialize)]
 pub struct HskEntry {
@@ -25,12 +25,18 @@ impl From<HskEntry> for WordEntry {
 fn get_hsk(filename: &str, level: u8) -> impl Iterator<Item = HskEntry> {
     let file = File::open(filename).unwrap();
     let reader = std::io::BufReader::new(file);
-    let mut rdr = csv::ReaderBuilder::new().delimiter(b'\t').has_headers(false).from_reader(reader);
-    let v: Vec<_> = rdr.deserialize::<HskEntry>().map(move |r| {
-        let mut e = r.unwrap();
-        e.level = Some(level);
-        e
-    }).collect();
+    let mut rdr = csv::ReaderBuilder::new()
+        .delimiter(b'\t')
+        .has_headers(false)
+        .from_reader(reader);
+    let v: Vec<_> = rdr
+        .deserialize::<HskEntry>()
+        .map(move |r| {
+            let mut e = r.unwrap();
+            e.level = Some(level);
+            e
+        })
+        .collect();
     v.into_iter()
 }
 

@@ -76,7 +76,10 @@ impl CapPinyin {
 }
 impl From<Pinyin> for CapPinyin {
     fn from(p: Pinyin) -> Self {
-        Self{py: p.0, cap: false}
+        Self {
+            py: p.0,
+            cap: false,
+        }
     }
 }
 impl<S: AsRef<str>> From<S> for CapPinyin {

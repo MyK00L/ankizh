@@ -1,6 +1,7 @@
 use crate::common::*;
 use const_format::concatcp;
 use genanki_rs::*;
+use html_escape::encode_safe;
 use std::sync::LazyLock;
 
 pub const DECK_ID: i64 = 9030804782668984910;
@@ -272,15 +273,21 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
             // sort_field
             &format!("{:08}", idx),
             // word
-            &we.id,
+            &encode_safe(&we.id),
             // english_single
             &we.hsk_lev
-                .and_then(|hsk| if hsk < 7 { we.first_definition() } else { None })
+                .and_then(|hsk| {
+                    if hsk < 7 {
+                        we.first_definition().map(|x| encode_safe(&x).to_string())
+                    } else {
+                        None
+                    }
+                })
                 .unwrap_or_default(),
             // pinyin
             &we.pinyin
                 .iter()
-                .map(|x| x.to_string())
+                .map(|x| encode_safe(&x.to_string()).to_string())
                 .fold(String::new(), |acc, e| {
                     let sep = if !acc.is_empty() { ", " } else { "" };
                     acc + sep + &e
@@ -291,10 +298,10 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
                 .map(|x| {
                     format!(
                         "<li><b>{}</b>: {}</li>",
-                        x.pinyin.unwrap_or_default(),
+                        &encode_safe(&x.pinyin.unwrap_or_default().to_string()),
                         x.english
                             .iter()
-                            .map(|x| format!(r#"<span class="def">{}</span>"#, x))
+                            .map(|x| format!(r#"<span class="def">{}</span>"#, encode_safe(x)))
                             .fold(String::new(), |acc, e| acc + &e)
                     )
                 })
@@ -302,14 +309,16 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
             // writing
             &html_from_writing(we.writing),
             // traditional
-            &we.traditional.unwrap_or_default(),
+            &encode_safe(&we.traditional.unwrap_or_default()),
             // examlpes
             &we.examples
                 .into_iter()
                 .map(|x| {
                     format!(
                         "<li><ruby>{}<rt>{}</rt></ruby><br/>{}</li>",
-                        x.zh, x.py, x.en
+                        encode_safe(&x.zh),
+                        encode_safe(&x.py.to_string()),
+                        encode_safe(&x.en)
                     )
                 })
                 .fold(String::new(), |acc, e| acc + &e),
@@ -363,7 +372,7 @@ pub fn syllable_entry_to_note(se: SyllableEntry, idx: usize) -> Note {
             // sort_field
             &format!("{:08}", idx),
             // pinyin
-            &se.id,
+            &encode_safe(&se.id),
             &format!(
                 "[sound:{}]",
                 se.audio_file.file_name().unwrap().to_str().unwrap()
@@ -418,17 +427,17 @@ pub fn grammar_entry_to_note(ge: GrammarEntry, idx: usize) -> Note {
             // sort_field
             &format!("{:08}", idx),
             // szh
-            &ge.structure.zh,
+            &encode_safe(&ge.structure.zh),
             // sen
-            &ge.structure.en,
+            &encode_safe(&ge.structure.en),
             // spy
-            &ge.structure.py.to_string(),
+            &encode_safe(&ge.structure.py.to_string()),
             // ezh
-            &ge.example.zh,
+            &encode_safe(&ge.example.zh),
             // een
-            &ge.example.en,
+            &encode_safe(&ge.example.en),
             // epy
-            &ge.example.py.to_string(),
+            &encode_safe(&ge.example.py.to_string()),
             // hsk
             &ge.hsk_lev
                 .map(|x| x.to_string())
