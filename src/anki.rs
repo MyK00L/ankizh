@@ -56,7 +56,12 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
     <p>HSK: {{hsk}}</p>
     <details>
         <summary>Extra</summary>
+        <ul>
         {{extra}}
+        <li><a href="http://dict.youdao.com/search?q={{text:penc}}">youdao</a></li>
+        <li><a href="https://tatoeba.org/en/sentences/search?from=cmn&query={{text:penc}}&to=">tatoeba</a></li>
+        <li><a href="https://hanzicraft.com/character/{{text:penc}}">hanzicraft</a></li>
+        </ul>
     </details>
     {{#audio}}<p class="tc">{{audio}}</p>{{/audio}}
     "#;
@@ -169,6 +174,7 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
             Field::new("hsk"),
             Field::new("audio"),
             Field::new("extra"),
+            Field::new("penc"),
         ],
         vec![
             template_meaning,
@@ -266,6 +272,11 @@ fn html_from_writing(w: Vec<CharWriting>) -> String {
 }
 pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
     let guid = guid_for(we.id());
+    let extra = we
+        .extra
+        .iter()
+        .map(|x| format!("<li>{}</li>", x))
+        .fold(String::new(), |acc, e| acc + &e);
     Note::new_with_options(
         WORD_MODEL.clone(),
         vec![
@@ -330,7 +341,9 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
                 .map(|x| format!("[sound:{}]", x.file_name().unwrap().to_str().unwrap()))
                 .unwrap_or_default(),
             // extra
-            "",
+            &extra,
+            // penc
+            &penc(&we.id).to_string(),
         ],
         None,
         None,

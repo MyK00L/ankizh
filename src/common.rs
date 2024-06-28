@@ -39,6 +39,7 @@ pub struct WordEntry {
     pub traditional: Option<String>,
     pub audio_file: Option<std::path::PathBuf>,
     pub examples: Vec<Triplet>,
+    pub extra: Vec<String>,
 }
 impl WordEntry {
     pub fn from_id(id: String) -> Self {
@@ -53,17 +54,10 @@ impl WordEntry {
             traditional: None,
             audio_file: None,
             examples: vec![],
+            extra: vec![],
         }
     }
     pub fn first_definition(&self) -> Option<String> {
-        /*self.definitions.iter().find_map(|x| {
-            if x.pinyin.as_ref().is_some_and(|py| !py.is_capitalized()) {
-                x.english[0].as_str().split(';').next().map(|x| x.to_owned())
-            } else {
-                None
-            }
-        })
-        */
         let py: CapPinyin = self.pinyin[0].clone().into();
         self.definitions
             .iter()
@@ -115,6 +109,8 @@ impl WordEntry {
         }
         self.definitions.append(&mut o.definitions);
         self.freq.append(&mut o.freq);
+        self.examples.append(&mut o.examples);
+        self.extra.append(&mut o.extra);
 
         for (a, b) in self.writing.iter_mut().zip(o.writing.into_iter()) {
             if let CharWriting::Char(_) = a {
@@ -136,12 +132,6 @@ impl WordEntry {
                 .writing
                 .iter()
                 .any(|x| matches!(x, CharWriting::Char(_)))
-    }
-    fn is_missing_all_writing(&self) -> bool {
-        !self
-            .writing
-            .iter()
-            .any(|x| matches!(x, CharWriting::Strokes(_)))
     }
 }
 impl Entry for WordEntry {
@@ -180,13 +170,7 @@ impl Entry for WordEntry {
         }
     }
     fn to_delete(&self) -> bool {
-        ((!self.id.chars().any(is_good_cjk))
-            || if self.id.chars().count() == 1 {
-                self.definitions.is_empty()
-                    && (self.is_missing_all_writing() || self.pinyin.is_empty())
-            } else {
-                self.definitions.is_empty()
-            })
+        ((!self.id.chars().any(is_good_cjk)) || self.definitions.is_empty())
             && self.hsk_lev.is_none()
     }
     fn media(&self) -> Vec<String> {

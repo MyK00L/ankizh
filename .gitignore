@@ -1,4 +1,5 @@
 /target
 /out
 *.apkg
+/res/audio2
 
