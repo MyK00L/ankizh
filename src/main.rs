@@ -20,8 +20,7 @@ use genanki_rs::*;
 use ordered_float::NotNan;
 use utils::*;
 
-//const MAX_ENTRIES: usize = 20000;
-const MAX_ENTRIES: usize = 200;
+const MAX_ENTRIES: usize = 20000;
 const MIN_PRIORITY: f32 = 0.19f32;
 
 use std::collections::{HashMap, HashSet};
@@ -33,7 +32,7 @@ fn process_entries() -> Vec<CommonEntry> {
     let fr = freq::get_records();
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
-    let sa = audio::get_syllable_audios().take(2);
+    let sa = audio::get_syllable_audios();//.take(2);
     let hs = hsk::get_hsks();
     let lg = lp_grammar::get_records();
 

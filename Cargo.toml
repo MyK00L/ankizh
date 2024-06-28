@@ -11,7 +11,7 @@ bincode = "1.3.3"
 const_format = "0.2.32"
 csv = "1.3.0"
 enum_dispatch = "0.3.13"
-genanki-rs = "0.4"
+genanki-rs = {git="https://github.com/MyK00L/genanki-rs.git", rev="0b61e936e08a3bcb345c1ad0f09d6ee1d3197a76"}
 html-escape = "0.2.13"
 itertools = "0.13.0"
 jieba-rs = "0.7.0"

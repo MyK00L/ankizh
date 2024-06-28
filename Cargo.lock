@@ -422,8 +422,7 @@ dependencies = [
 [[package]]
 name = "genanki-rs"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b3f602729d6ad283644cd0eb592afba5d37cdcd67e8f7c50d80d105065c356c"
+source = "git+https://github.com/MyK00L/genanki-rs.git?rev=0b61e936e08a3bcb345c1ad0f09d6ee1d3197a76#0b61e936e08a3bcb345c1ad0f09d6ee1d3197a76"
 dependencies = [
  "fancy-regex",
  "ramhorns",
