@@ -76,7 +76,7 @@ fn length_bonus(s: &str) -> NotNan<f32> {
     const GL: f32 = 7f32;
     const GR: f32 = 14f32;
     NotNan::new(if l < GL {
-        l/GL
+        l / GL
     } else if l > GR {
         2f32.powf(GR - l)
     } else {
@@ -87,19 +87,7 @@ fn length_bonus(s: &str) -> NotNan<f32> {
 
 use std::collections::HashMap;
 pub fn add_examples(v: &mut [CommonEntry]) {
-    let it = v.iter_mut().filter_map(|x| match x {
-        CommonEntry::WordEntry(inner) => Some(inner),
-        _ => None,
-    });
-    let mut hm = HashMap::<String, (usize, NotNan<f32>)>::new();
-    for (i, entry) in it.enumerate() {
-        hm.insert(entry.id.clone(), (i, entry.priority()));
-    }
-
-    let it = v.iter_mut().filter_map(|x| match x {
-        CommonEntry::WordEntry(inner) => Some(inner),
-        _ => None,
-    });
+    // build tatoeba records trie
     let records = get_records();
     let mut trie = ptrie::Trie::new();
     for (i, record) in records.iter().enumerate() {
@@ -108,8 +96,37 @@ pub fn add_examples(v: &mut [CommonEntry]) {
         }
     }
 
-    for (thisord, i) in it.enumerate() {
-        let thispr = i.priority();
+    // build hashmap for priorities
+    let it = v.iter().filter_map(|x| match x {
+        CommonEntry::WordEntry(inner) => Some(inner),
+        _ => None,
+    });
+    let mut hm = HashMap::<String, (usize, NotNan<f32>)>::new();
+    for (i, entry) in it.enumerate() {
+        hm.insert(entry.id.clone(), (i, entry.priority()));
+    }
+
+    // highest priority from a point onwards
+    let it = v.iter().filter_map(|x| match x {
+        CommonEntry::WordEntry(inner) => Some(inner),
+        _ => None,
+    });
+    let mut maxpr: Vec<_> = it
+        .rev()
+        .map(|x| x.priority())
+        .scan(NotNan::new(0f32).unwrap(), |state, x| {
+            *state = (*state).max(x);
+            Some(*state)
+        })
+        .collect();
+    maxpr.reverse();
+
+    let it = v.iter_mut().filter_map(|x| match x {
+        CommonEntry::WordEntry(inner) => Some(inner),
+        _ => None,
+    });
+
+    for (thisord, (i, thispr)) in it.zip(maxpr.into_iter()).enumerate() {
         i.examples = trie
             .find_postfixes(i.id.bytes())
             .into_iter()
