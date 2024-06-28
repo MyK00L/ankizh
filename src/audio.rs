@@ -1,4 +1,5 @@
 use crate::common::*;
+use crate::utils::*;
 use std::path::PathBuf;
 
 #[derive(Clone)]
@@ -32,12 +33,11 @@ pub fn get_syllable_audios() -> impl Iterator<Item = CommonEntry> {
                 continue;
             }
             let id = name[4..].to_owned();
-            ans.push(AudioPath { id, path });
+            ans.push(SyllableEntry::from(AudioPath { id, path }));
         }
     }
-    ans.into_iter()
-        .map(SyllableEntry::from)
-        .map(CommonEntry::from)
+    ans.sort_by_key(|s| guid_for(s.id()));
+    ans.into_iter().map(CommonEntry::from)
 }
 
 pub fn get_word_audios() -> impl Iterator<Item = CommonEntry> {
