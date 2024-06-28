@@ -1,23 +1,8 @@
 use crate::pinyin_type::{CapPinyin, Pinyin};
+use crate::utils::*;
 use enum_dispatch::enum_dispatch;
 use ordered_float::NotNan;
 use serde::{Deserialize, Serialize};
-
-pub fn is_good_cjk(c: char) -> bool {
-    let cp: u32 = c.into();
-    (0x4E00..=0x9FFF).contains(&cp)
-        || (0x3400..=0x4DBF).contains(&cp)
-        || (0x20000..=0x2A6DF).contains(&cp)
-        || (0x2A700..=0x2B73F).contains(&cp)
-        || (0x2B740..=0x2B81F).contains(&cp)
-        || (0x2B820..=0x2CEAF).contains(&cp)
-        || (0x2CEB0..=0x2EBEF).contains(&cp)
-        || (0x2EBF0..=0x2EE5F).contains(&cp)
-        || (0x2F800..=0x2FA1F).contains(&cp)
-        || (0xF900..=0xFAFF).contains(&cp)
-        || (0x2F800..=0x2FA1F).contains(&cp)
-        || (0x2E80..=0x2EFF).contains(&cp)
-}
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Definition {

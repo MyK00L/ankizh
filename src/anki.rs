@@ -1,4 +1,5 @@
 use crate::common::*;
+use crate::utils::*;
 use const_format::concatcp;
 use genanki_rs::*;
 use html_escape::encode_safe;
@@ -264,7 +265,8 @@ fn html_from_writing(w: Vec<CharWriting>) -> String {
     format!(r#"<p class="tc">{}</p>"#, cw.join(""))
 }
 pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
-    Note::new(
+    let guid = guid_for(we.id());
+    Note::new_with_options(
         WORD_MODEL.clone(),
         vec![
             // sort_field
@@ -330,6 +332,9 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
             // extra
             "",
         ],
+        None,
+        None,
+        Some(&guid),
     )
     .unwrap()
 }
@@ -363,7 +368,8 @@ pub static SYLLABLE_MODEL: LazyLock<Model> = LazyLock::new(|| {
     )
 });
 pub fn syllable_entry_to_note(se: SyllableEntry, idx: usize) -> Note {
-    Note::new(
+    let guid = guid_for(se.id());
+    Note::new_with_options(
         SYLLABLE_MODEL.clone(),
         vec![
             // sort_field
@@ -375,6 +381,9 @@ pub fn syllable_entry_to_note(se: SyllableEntry, idx: usize) -> Note {
                 se.audio_file.file_name().unwrap().to_str().unwrap()
             ),
         ],
+        None,
+        None,
+        Some(&guid),
     )
     .unwrap()
 }
@@ -418,7 +427,8 @@ pub static GRAMMAR_MODEL: LazyLock<Model> = LazyLock::new(|| {
     )
 });
 pub fn grammar_entry_to_note(ge: GrammarEntry, idx: usize) -> Note {
-    Note::new(
+    let guid = guid_for(ge.id());
+    Note::new_with_options(
         GRAMMAR_MODEL.clone(),
         vec![
             // sort_field
@@ -440,6 +450,9 @@ pub fn grammar_entry_to_note(ge: GrammarEntry, idx: usize) -> Note {
                 .map(|x| x.to_string())
                 .unwrap_or(String::from("no")),
         ],
+        None,
+        None,
+        Some(&guid),
     )
     .unwrap()
 }

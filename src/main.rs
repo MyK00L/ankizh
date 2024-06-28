@@ -10,12 +10,14 @@ mod hsk;
 mod lp_grammar;
 mod pinyin_type;
 mod tatoeba;
+mod utils;
 
 use crate::pinyin_type::*;
 use anki::*;
 use common::*;
 use genanki_rs::*;
 use ordered_float::NotNan;
+use utils::*;
 
 const MAX_ENTRIES: usize = 20000;
 const MIN_PRIORITY: f32 = 0.19f32;
@@ -181,6 +183,14 @@ fn main() {
     //debug_entries(entries);return;
 
     let media: Vec<String> = entries.iter().flat_map(|x| x.media()).collect();
+
+    let mut guids = HashSet::<String>::new();
+    for entry in entries.iter() {
+        let guid = guid_for(entry.id());
+        if !guids.insert(guid) {
+            panic!("GUID collision");
+        }
+    }
 
     let notes = entries
         .into_iter()
