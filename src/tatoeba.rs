@@ -76,7 +76,7 @@ fn length_bonus(s: &str) -> NotNan<f32> {
     const GL: f32 = 7f32;
     const GR: f32 = 14f32;
     NotNan::new(if l < GL {
-        l
+        l/GL
     } else if l > GR {
         2f32.powf(GR - l)
     } else {
