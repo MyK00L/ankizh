@@ -12,6 +12,7 @@ fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
     result
 }
 fn process_pinyin(s: &str) -> String {
+    let s = s.trim();
     let s = {
         let mut ans = String::new();
         let mut lastnum = false;
@@ -25,18 +26,24 @@ fn process_pinyin(s: &str) -> String {
         ans
     };
     let s = prettify_pinyin::prettify(&s);
+    let s = s.trim();
     catch_unwind_silent(|| {
         let parser = pinyin_parser::PinyinParser::new()
-            .preserve_spaces(false)
+            .preserve_spaces(true)
             .preserve_punctuations(true)
             .with_strictness(pinyin_parser::Strictness::Loose)
             .preserve_miscellaneous(true);
-        parser.parse(&s).fold(String::new(), |acc, s| {
-            let sep = if acc.is_empty() { "" } else { " " };
-            acc + sep + s.trim()
+        parser.parse(s).fold(String::new(), |acc, s| {
+            let st = s.trim();
+            let sep = if acc.is_empty() || st.is_empty() {
+                ""
+            } else {
+                " "
+            };
+            acc + sep + st
         })
     })
-    .unwrap_or(s)
+    .unwrap_or(s.to_string())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
