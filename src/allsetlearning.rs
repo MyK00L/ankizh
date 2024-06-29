@@ -3,6 +3,7 @@ use crate::utils::*;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
+use crate::pinyin_type::Pinyin;
 
 #[derive(Deserialize)]
 struct AllsetlearningEntry {
@@ -18,7 +19,7 @@ pub fn get() -> impl Iterator<Item = CommonEntry> {
     a.into_iter()
         .map(|(k, v)| {
             let mut we = WordEntry::from_id(k.clone());
-            we.pinyin = vec![v.pinyin.into()];
+            we.pinyin = v.pinyin.split(',').map(Pinyin::from).collect();
             let url = url::Url::parse(&format!(
                 r#"https://resources.allsetlearning.com/chinese/grammar/{}"#,
                 penc(&k)
