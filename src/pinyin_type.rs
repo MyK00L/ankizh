@@ -2,6 +2,7 @@ use core::fmt;
 use pinyin::ToPinyin;
 use serde::{Deserialize, Serialize};
 
+#[cfg(not(test))]
 fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
     f: F,
 ) -> std::thread::Result<R> {
@@ -10,6 +11,12 @@ fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
     let result = std::panic::catch_unwind(f);
     std::panic::set_hook(prev_hook);
     result
+}
+#[cfg(test)]
+fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
+    f: F,
+) -> std::thread::Result<R> {
+    std::panic::catch_unwind(f)
 }
 fn process_pinyin(s: &str) -> String {
     let s = s.trim();
@@ -125,10 +132,11 @@ mod tests {
     }
     #[test]
     fn py() {
-        test_pyfrom("wo3bu2zhi1dao english", "wǒ bú zhī dao english");
-        test_pyfrom("wo3bu2zhi1dao5 english", "wǒ bú zhī dao english");
-        test_pyfrom("wo3 bu2 zhi1 dao english", "wǒ bú zhī dao english");
-        test_pyfrom("wǒ bú zhī dao english", "wǒ bú zhī dao english");
-        test_pyfrom("wǒbúzhīdao english", "wǒ bú zhī dao english");
+        test_pyfrom("nǐér", "nǐ ér");
+        test_pyfrom("wo3bu2zhi1dao", "wǒ bú zhī dao english");
+        test_pyfrom("wo3bu2zhi1dao5", "wǒ bú zhī dao english");
+        test_pyfrom("wo3 bu2 zhi1 dao", "wǒ bú zhī dao english");
+        test_pyfrom("wǒ bú zhī dao", "wǒ bú zhī dao english");
+        test_pyfrom("wǒbúzhīdao", "wǒ bú zhī dao english");
     }
 }
