@@ -56,7 +56,7 @@ impl Pinyin {
             .to_pinyin()
             .flatten()
             .map(|x| x.with_tone().to_string())
-            .fold(String::new(), |acc, e| acc + &e);
+            .fold(String::new(), |acc, e| acc + " " + &e);
         Self::from(spy)
     }
 }
