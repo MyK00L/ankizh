@@ -58,6 +58,7 @@ pub static WORD_MODEL: LazyLock<Model> = LazyLock::new(|| {
         <summary>Extra</summary>
         <ul>
         {{extra}}
+        <li><a href="https://www.dong-chinese.com/wiki/{{text:penc}}">dong</a></li>
         <li><a href="http://dict.youdao.com/search?q={{text:penc}}">youdao</a></li>
         <li><a href="https://tatoeba.org/en/sentences/search?from=cmn&query={{text:penc}}&to=">tatoeba</a></li>
         <li><a href="https://hanzicraft.com/character/{{text:penc}}">hanzicraft</a></li>

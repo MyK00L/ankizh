@@ -288,6 +288,14 @@ pub enum EntryId {
     Syllable(String),
     Grammar(String),
 }
+impl std::fmt::Display for EntryId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            EntryId::Word(x) | EntryId::Syllable(x) | EntryId::Grammar(x) => write!(f, "{}", x),
+        }
+    }
+}
+
 #[enum_dispatch]
 pub trait Entry {
     /// Higher priority means it should come earlier in the deck

@@ -5,12 +5,14 @@ mod anki;
 mod audio;
 mod cedict;
 mod common;
+mod dong;
 mod freq;
 mod freq2;
 mod hsk;
 mod lp_grammar;
 mod pinyin_type;
 mod tatoeba;
+mod unihan;
 mod utils;
 
 use crate::pinyin_type::*;
@@ -21,6 +23,7 @@ use ordered_float::NotNan;
 use utils::*;
 
 const MAX_ENTRIES: usize = 20000;
+//const MAX_ENTRIES: usize = 1024;
 const MIN_PRIORITY: f32 = 0.19f32;
 
 use std::collections::{HashMap, HashSet};
@@ -32,12 +35,16 @@ fn process_entries() -> Vec<CommonEntry> {
     let fr = freq::get_records();
     let f2 = freq2::get_records();
     let wa = audio::get_word_audios();
-    let sa = audio::get_syllable_audios(); //.take(2);
+    let sa = audio::get_syllable_audios().take(2);
     let hs = hsk::get_hsks();
     let lg = lp_grammar::get_records();
+    let dg = dong::get();
+    let uh = unihan::get_records();
 
     let mut hm = HashMap::<EntryId, CommonEntry>::new();
     for e in hs
+        .chain(uh)
+        .chain(dg)
         .chain(al)
         .chain(ag)
         .chain(ad)
@@ -123,6 +130,8 @@ fn process_entries() -> Vec<CommonEntry> {
     let mut ans = vec![];
     let mut done = HashSet::<EntryId>::new();
     let mut stack: Vec<Vec<EntryId>> = vec![ordered.into_iter().map(|(_p, k)| k).collect()];
+    let mut ancestors = vec![];
+    ancestors.push(stack[0].last().unwrap().clone());
     while !stack.is_empty() && ans.len() < MAX_ENTRIES {
         while stack.last().is_some_and(|x| x.is_empty()) {
             stack.pop();
@@ -135,20 +144,31 @@ fn process_entries() -> Vec<CommonEntry> {
                     let mut deps: Vec<EntryId> = e
                         .dependencies()
                         .into_iter()
-                        .filter(|x| !done.contains(x) && hm.contains_key(x))
+                        .filter(|x| {
+                            !done.contains(x) && hm.contains_key(x) && !ancestors.contains(x)
+                        })
                         .collect();
                     if deps.is_empty() {
                         done.insert(e.id().clone());
                         ans.push(e);
                         lv.pop();
+                        ancestors.pop();
+                        if let Some(did) = lv.last() {
+                            ancestors.push(did.clone());
+                        }
                         //eprintln!("made {}", eid);
                     } else {
                         deps.sort_by_cached_key(|a| hm.get(a).unwrap().priority());
-                        //eprintln!("to make a {}:{} i need {:?}", eid, e.total_priority(), deps);
+                        //eprintln!("to make a {}:{} i need {:?}", eid, e.priority(), deps);
+                        ancestors.push(deps.last().unwrap().clone());
                         stack.push(deps);
                     }
                 } else {
                     lv.pop();
+                    ancestors.pop();
+                    if let Some(did) = lv.last() {
+                        ancestors.push(did.clone());
+                    }
                 }
             }
         }
@@ -181,9 +201,10 @@ fn debug_entries(entries: Vec<CommonEntry>) {
 
 fn main() {
     //cache_entries();return;
-    let entries = get_cached_entries();
-    //let entries = process_entries();
-    //debug_entries(entries);return;
+    //let entries = get_cached_entries();
+    let entries = process_entries();
+    //debug_entries(entries);
+    //return;
 
     let media: Vec<String> = entries.iter().flat_map(|x| x.media()).collect();
 

@@ -1,9 +1,9 @@
 use crate::common::*;
+use crate::pinyin_type::Pinyin;
 use crate::utils::*;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
-use crate::pinyin_type::Pinyin;
 
 #[derive(Deserialize)]
 struct AllsetlearningEntry {
