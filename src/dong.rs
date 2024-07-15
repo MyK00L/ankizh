@@ -1,7 +1,21 @@
 use crate::common::*;
 use crate::pinyin_type::*;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::io::BufRead;
+
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+enum ComponentType {
+    Meaning,
+    Sound,
+    Iconic,
+    Remnant,
+    Simplified,
+    Deleted,
+    Distinguishing,
+    Unknown,
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -14,6 +28,10 @@ struct Component {
     character: char,
     #[serde(default)]
     is_glyph_changed: bool,
+    #[serde(rename = "type")]
+    ctype: Vec<ComponentType>,
+    #[serde(skip)]
+    is_bad: bool,
 }
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -37,6 +55,8 @@ struct Dong {
     #[serde(rename = "char")]
     utf8: Option<char>,
     simp: Option<char>,
+    #[serde(default)]
+    trad_variants: Vec<char>,
     #[serde(default)]
     pinyin_frequencies: Vec<PinyinFreq>,
     #[serde(default)]
@@ -62,14 +82,19 @@ impl From<Dong> for WordEntry {
             .iter()
             .flatten()
             .filter_map(|x| {
-                if x.is_glyph_changed {
+                if x.is_bad {
                     None
                 } else {
                     Some(EntryId::Word(x.character.into()))
                 }
             })
             .collect();
-        ans.examples = dong.top_words.into_iter().map(Triplet::from).collect();
+        ans.examples = dong
+            .top_words
+            .into_iter()
+            .take(3)
+            .map(Triplet::from)
+            .collect();
         ans
     }
 }
@@ -77,7 +102,7 @@ impl From<Dong> for WordEntry {
 pub fn get() -> impl Iterator<Item = CommonEntry> {
     let file = std::fs::File::open("res/dictionary_char_2024-06-17.jsonl").unwrap();
     let reader = std::io::BufReader::new(file);
-    reader
+    let mut dongs: Vec<Dong> = reader
         .lines()
         .map_while(Result::ok)
         .map(|line| {
@@ -88,6 +113,44 @@ pub fn get() -> impl Iterator<Item = CommonEntry> {
             }
             x.unwrap()
         })
+        .collect();
+    let comphm: HashMap<char, Vec<char>> = dongs
+        .iter()
+        .filter(|x| x.utf8.is_some())
+        .map(|dong| {
+            (
+                dong.utf8.unwrap(),
+                dong.components
+                    .iter()
+                    .flatten()
+                    .map(|x| x.character)
+                    .collect(),
+            )
+        })
+        .collect();
+    for dong in dongs.iter_mut() {
+        if let Some(ref mut comps) = &mut dong.components {
+            let tcomps: Vec<char> = dong
+                .trad_variants
+                .iter()
+                .filter_map(|x| comphm.get(x))
+                .flatten()
+                .copied()
+                .collect();
+            for comp in comps.iter_mut() {
+                if comp.is_glyph_changed
+                    || comp.ctype.contains(&ComponentType::Deleted)
+                    || (comp.ctype.contains(&ComponentType::Simplified)
+                        && tcomps.contains(&comp.character))
+                {
+                    comp.is_bad = true;
+                }
+            }
+        }
+    }
+
+    dongs
+        .into_iter()
         .map(WordEntry::from)
         .map(CommonEntry::from)
 }
