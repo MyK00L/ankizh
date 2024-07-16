@@ -49,6 +49,13 @@ impl From<Word> for Triplet {
     }
 }
 
+#[derive(Deserialize, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Statistics {
+    #[serde(default)]
+    top_words: Vec<Word>,
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct Dong {
@@ -56,13 +63,13 @@ struct Dong {
     utf8: Option<char>,
     simp: Option<char>,
     #[serde(default)]
+    statistics: Statistics,
+    #[serde(default)]
     trad_variants: Vec<char>,
     #[serde(default)]
     pinyin_frequencies: Vec<PinyinFreq>,
     #[serde(default)]
     components: Option<Vec<Component>>,
-    #[serde(default)]
-    top_words: Vec<Word>,
     #[allow(unused)]
     gloss: Option<String>,
     #[allow(unused)]
@@ -90,6 +97,7 @@ impl From<Dong> for WordEntry {
             })
             .collect();
         ans.examples = dong
+            .statistics
             .top_words
             .into_iter()
             .take(3)
