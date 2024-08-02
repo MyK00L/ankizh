@@ -127,41 +127,41 @@ pub fn add_examples(v: &mut [CommonEntry]) {
     });
 
     for (thisord, (i, thispr)) in it.zip(maxpr.into_iter()).enumerate() {
-        i.examples = trie
-            .find_postfixes(i.id.bytes())
-            .into_iter()
-            .unique()
-            .map(|x| &records[*x])
-            .k_largest_by_key(3, |x| -> NotNan<f32> {
-                let lb = length_bonus(&x.zh);
-                let cb = NotNan::new(if x.tokens.contains(&i.id) {
-                    1.0f32
-                } else {
-                    0.0f32
+        i.examples.extend(
+            trie.find_postfixes(i.id.bytes())
+                .into_iter()
+                .unique()
+                .map(|x| &records[*x])
+                .k_largest_by_key(3, |x| -> NotNan<f32> {
+                    let lb = length_bonus(&x.zh);
+                    let cb = NotNan::new(if x.tokens.contains(&i.id) {
+                        1.0f32
+                    } else {
+                        0.0f32
+                    })
+                    .unwrap();
+
+                    let um: NotNan<f32> = x
+                        .tokens
+                        .iter()
+                        .map(|x| {
+                            hm.get(x)
+                                .cloned()
+                                .unwrap_or((usize::MAX, NotNan::new(0f32).unwrap()))
+                        })
+                        .map(|(ord, pr)| {
+                            if ord <= thisord || pr > thispr {
+                                NotNan::new(0.2f32).unwrap()
+                            } else {
+                                (pr - thispr) * NotNan::new(4f32).unwrap()
+                            }
+                        })
+                        .sum();
+
+                    NotNan::new(3f32).unwrap() * lb + NotNan::new(5f32).unwrap() * cb + um
                 })
-                .unwrap();
-
-                let um: NotNan<f32> = x
-                    .tokens
-                    .iter()
-                    .map(|x| {
-                        hm.get(x)
-                            .cloned()
-                            .unwrap_or((usize::MAX, NotNan::new(0f32).unwrap()))
-                    })
-                    .map(|(ord, pr)| {
-                        if ord <= thisord || pr > thispr {
-                            NotNan::new(0.2f32).unwrap()
-                        } else {
-                            (pr - thispr) * NotNan::new(4f32).unwrap()
-                        }
-                    })
-                    .sum();
-
-                NotNan::new(3f32).unwrap() * lb + NotNan::new(5f32).unwrap() * cb + um
-            })
-            .cloned()
-            .map(Triplet::from)
-            .collect();
+                .cloned()
+                .map(Triplet::from),
+        );
     }
 }

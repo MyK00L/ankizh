@@ -31,6 +31,8 @@ impl From<Record> for WordEntry {
                     .map(|x| x.trim().to_owned())
                     .collect(),
             }];
+            let fd = w.definitions[0].english[0].clone();
+            w.simple_definitions = vec![fd.split_once(',').map(|x| x.0.to_owned()).unwrap_or(fd)];
         }
         w.pinyin = r.k_mandarin.split_whitespace().map(Pinyin::from).collect();
         w

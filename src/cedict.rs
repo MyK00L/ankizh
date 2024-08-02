@@ -4,8 +4,9 @@ use regex::Regex;
 use std::io::BufRead;
 use std::sync::LazyLock;
 
-pub static RERE: LazyLock<[Regex; 7]> = LazyLock::new(|| {
+pub static RERE: LazyLock<[Regex; 8]> = LazyLock::new(|| {
     [
+        Regex::new(r#"used in (?:\S)*\[.*?\](?:\(.*\))?(?: and (?:\S)*\[.*?\](?:\(.*\))?)*"#).unwrap(),
         Regex::new(r#"old variant of (?:\S)*\[.*?\](?:\(.*\))?"#).unwrap(),
         Regex::new(r#"erhua variant of (?:\S)*\[.*?\](?:\(.*\))?"#).unwrap(),
         Regex::new(r#"variant of (?:\S)*\[.*?\](?:\(.*\))?"#).unwrap(),
@@ -22,10 +23,11 @@ fn simplify_def(ss: &str, blacklist: &[char]) -> Option<String> {
         ans = re.replace_all(&ans, "").trim().to_owned();
     }
     ans = ans.as_str().replace(blacklist, "〇");
-    if ans.as_str().trim().is_empty() {
+    let ans = ans.trim_matches(|c: char| c.is_whitespace() || c == ',' || c==';');
+    if ans.is_empty() {
         None
     } else {
-        Some(ans)
+        Some(ans.to_owned())
     }
 }
 

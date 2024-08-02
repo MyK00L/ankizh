@@ -289,7 +289,7 @@ pub fn word_entry_to_note(we: WordEntry, idx: usize) -> Note {
             &we.hsk_lev
                 .and_then(|hsk| {
                     if hsk < 7 {
-                        we.first_definition().map(|x| encode_safe(&x).to_string())
+                        we.simple_english().map(|x| encode_safe(&x).to_string())
                     } else {
                         None
                     }

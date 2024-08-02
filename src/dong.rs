@@ -75,15 +75,54 @@ struct Dong {
     #[allow(unused)]
     original_meaning: Option<String>,
 }
+impl Dong {
+    fn get_gloss(&self) -> Option<String> {
+        self.gloss.clone().and_then(|g| {
+            let mut ans = String::new();
+            let mut np = 0;
+            for c in g.chars() {
+                if c == '(' {
+                    np += 1;
+                }
+
+                if np == 0 {
+                    ans.push(c);
+                }
+
+                if c == ')' {
+                    np -= 1;
+                }
+            }
+            let ans = ans.trim_matches(|c: char| c.is_whitespace() || c == ',' || c == ';');
+            if ans.is_empty() {
+                None
+            } else {
+                Some(ans.to_owned())
+            }
+        })
+    }
+    fn get_glosses(&self) -> Vec<String> {
+        let gloss = self.get_gloss();
+        match gloss {
+            None => vec![],
+            Some(g) => g.split(';').map(|x| x.trim().to_owned()).collect(),
+        }
+    }
+    fn get_original(&self) -> Option<String> {
+        self.original_meaning.clone().and_then(|om| {
+            let og = om.trim();
+            if og.is_empty() {
+                None
+            } else {
+                Some(og.to_owned())
+            }
+        })
+    }
+}
 impl From<Dong> for WordEntry {
     fn from(dong: Dong) -> Self {
         let id = dong.simp.unwrap_or(dong.utf8.unwrap_or_default()).into();
         let mut ans = Self::from_id(id);
-        ans.pinyin = dong
-            .pinyin_frequencies
-            .into_iter()
-            .map(|x| Pinyin::from(x.pinyin))
-            .collect();
         ans.dependencies = dong
             .components
             .iter()
@@ -96,12 +135,34 @@ impl From<Dong> for WordEntry {
                 }
             })
             .collect();
+
+        let glosses = dong.get_glosses();
+        let glosses_is_empty = glosses.is_empty();
+        let original = dong.get_original();
+        if !glosses_is_empty || original.is_some() {
+            ans.definitions = vec![Definition {
+                pinyin: None,
+                english: glosses
+                    .into_iter()
+                    .chain(original.map(|x| "original: ".to_owned() + &x).into_iter())
+                    .collect(),
+            }];
+        }
+        if !glosses_is_empty {
+            let fd = ans.definitions[0].english[0].clone();
+            ans.simple_definitions = vec![fd.split_once(',').map(|x| x.0.to_owned()).unwrap_or(fd)];
+        }
         ans.examples = dong
             .statistics
             .top_words
             .into_iter()
             .take(3)
             .map(Triplet::from)
+            .collect();
+        ans.pinyin = dong
+            .pinyin_frequencies
+            .into_iter()
+            .map(|x| Pinyin::from(x.pinyin))
             .collect();
         ans
     }

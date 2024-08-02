@@ -32,6 +32,7 @@ pub struct WordEntry {
     pub id: String,
     pub pinyin: Vec<Pinyin>,
     pub definitions: Vec<Definition>,
+    pub simple_definitions: Vec<String>,
     pub freq: Vec<NotNan<f32>>,
     pub hsk_lev: Option<u8>,
     pub dependencies: Vec<EntryId>,
@@ -47,6 +48,7 @@ impl WordEntry {
             id: id.clone(),
             pinyin: vec![],
             definitions: vec![],
+            simple_definitions: vec![],
             freq: vec![],
             hsk_lev: None,
             dependencies: vec![],
@@ -84,6 +86,24 @@ impl WordEntry {
                 }
             })
     }
+    pub fn simple_english(&self) -> Option<String> {
+        let first = self.first_definition();
+        let defs =
+            first
+                .iter()
+                .chain(self.simple_definitions.iter())
+                .fold(String::new(), |acc, e| {
+                    let sep = if !acc.is_empty() { " | " } else { "" };
+                    acc + sep + e
+                });
+        let defs = defs.trim();
+        if defs.is_empty() {
+            None
+        } else {
+            let num = self.id.chars().count();
+            Some(format!("({}) {}", num, defs))
+        }
+    }
     pub fn total_priority(&self) -> NotNan<f32> {
         let freq: NotNan<f32> = self.freq.iter().sum();
         let hsk_lev = self.hsk_lev.unwrap_or(10);
@@ -108,6 +128,7 @@ impl WordEntry {
             }
         }
         self.definitions.append(&mut o.definitions);
+        self.simple_definitions.append(&mut o.simple_definitions);
         self.freq.append(&mut o.freq);
         self.examples.append(&mut o.examples);
         self.extra.append(&mut o.extra);
